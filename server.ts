@@ -38,72 +38,101 @@ function getGenAI() {
 // 1. Food Image Analysis API Route
 app.post(["/api/analyze-food", "/analyze-food"], async (req, res) => {
   try {
-    const { imageBase64 } = req.body;
+    const { imageBase64 } = req.body || {};
     if (!imageBase64) {
       return res.status(400).json({ error: "Image data is required" });
     }
 
-    const ai = getGenAI();
-    // Clean up base64 prefix if present
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(400).json({
+        error: "GEMINI_API_KEY belum dipasang di Vercel. Silakan tambahkan GEMINI_API_KEY di Vercel Settings -> Environment Variables."
+      });
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
     const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
-      contents: [
-        {
-          role: "user",
-          parts: [
+    const modelsToTry = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"];
+    let response: any = null;
+    let lastErr: any = null;
+
+    for (const model of modelsToTry) {
+      try {
+        response = await ai.models.generateContent({
+          model,
+          contents: [
             {
-              text: "Analisis gambar ini. Apakah ini gambar makanan/minuman? Jika ya, estimasi nama (Indonesia), kalori(kkal), protein(g), karbohidrat(g), lemak(g). Jika bukan makanan/minuman, atur isFood menjadi false.",
-            },
-            {
-              inlineData: {
-                mimeType: "image/jpeg",
-                data: cleanBase64,
-              },
+              role: "user",
+              parts: [
+                {
+                  text: "Analisis gambar ini. Apakah ini gambar makanan/minuman? Jika ya, estimasi nama (Indonesia), kalori(kkal), protein(g), karbohidrat(g), lemak(g). Jika bukan makanan/minuman, atur isFood menjadi false.",
+                },
+                {
+                  inlineData: {
+                    mimeType: "image/jpeg",
+                    data: cleanBase64,
+                  },
+                },
+              ],
             },
           ],
-        },
-      ],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            name: { type: Type.STRING },
-            calories: { type: Type.INTEGER },
-            protein: { type: Type.INTEGER },
-            carbs: { type: Type.INTEGER },
-            fat: { type: Type.INTEGER },
-            isFood: { type: Type.BOOLEAN },
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                name: { type: Type.STRING },
+                calories: { type: Type.INTEGER },
+                protein: { type: Type.INTEGER },
+                carbs: { type: Type.INTEGER },
+                fat: { type: Type.INTEGER },
+                isFood: { type: Type.BOOLEAN },
+              },
+              required: ["name", "calories", "protein", "carbs", "fat", "isFood"],
+            },
           },
-          required: ["name", "calories", "protein", "carbs", "fat", "isFood"],
-        },
-      },
-    });
+        });
+        if (response) break;
+      } catch (e: any) {
+        console.warn(`Model ${model} failed in analyze-food:`, e?.message);
+        lastErr = e;
+      }
+    }
+
+    if (!response) {
+      throw lastErr || new Error("Gagal memproses gambar dengan Gemini AI");
+    }
 
     const text = response.text;
     if (!text) {
-      throw new Error("No response text from Gemini");
+      throw new Error("Tidak ada respon teks dari Gemini");
     }
 
     const parsed = JSON.parse(text);
     return res.json(parsed);
   } catch (error: any) {
     console.error("Error in /api/analyze-food:", error);
-    return res.status(500).json({ error: error.message || "Failed to analyze image" });
+    return res.status(500).json({ error: error.message || "Gagal menganalisis gambar makanan." });
   }
 });
 
 // 2. AI Health Chat API Route
 app.post(["/api/ai-chat", "/ai-chat"], async (req, res) => {
   try {
-    const { history, message, language = "id" } = req.body;
+    const { history, message, language = "id" } = req.body || {};
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
     }
 
-    const ai = getGenAI();
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.json({
+        text: "⚠️ **GEMINI_API_KEY belum dipasang di Vercel.**\n\nUntuk mengaktifkan Jarvis AI di Vercel:\n1. Buka **Vercel Dashboard** -> pilih project `daily-calorie-ai`\n2. Buka menu **Settings** -> **Environment Variables**\n3. Tambahkan Variable Name: `GEMINI_API_KEY` dan Value: API key dari Google AI Studio (https://aistudio.google.com/app/apikey)\n4. Lakukan **Redeploy** project Anda di Vercel."
+      });
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
 
     // Format history for SDK
     const formattedContents = (history || []).map((msg: any) => ({
@@ -131,13 +160,29 @@ app.post(["/api/ai-chat", "/ai-chat"], async (req, res) => {
 
     const targetLang = langMap[language] || "Indonesia";
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
-      contents: formattedContents,
-      config: {
-        systemInstruction: `Anda adalah Jarvis, asisten kesehatan AI yang ramah, informatif, dan pintar. Jawab dengan bahasa ${targetLang} yang santai, ringkas (maksimal 3 paragraf), dan fokus pada gaya hidup sehat, nutrisi, resep diet, dan olahraga.`,
-      },
-    });
+    const modelsToTry = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"];
+    let response: any = null;
+    let lastErr: any = null;
+
+    for (const model of modelsToTry) {
+      try {
+        response = await ai.models.generateContent({
+          model,
+          contents: formattedContents,
+          config: {
+            systemInstruction: `Anda adalah Jarvis, asisten kesehatan AI yang ramah, informatif, dan pintar. Jawab dengan bahasa ${targetLang} yang santai, ringkas (maksimal 3 paragraf), dan fokus pada gaya hidup sehat, nutrisi, resep diet, dan olahraga.`,
+          },
+        });
+        if (response) break;
+      } catch (e: any) {
+        console.warn(`Model ${model} failed in ai-chat:`, e?.message);
+        lastErr = e;
+      }
+    }
+
+    if (!response) {
+      throw lastErr || new Error("Gagal mendapatkan balasan dari Gemini AI");
+    }
 
     return res.json({ text: response.text || "Maaf, saya sedang tidak fokus. Bisa ulangi pertanyaannya?" });
   } catch (error: any) {
