@@ -8,11 +8,22 @@ const PORT = 3000;
 
 app.use(express.json({ limit: "20mb" }));
 
+// CORS middleware
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 // Lazy get Gemini client
 function getGenAI() {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY environment variable is missing.");
+    throw new Error("GEMINI_API_KEY belum dikonfigurasi. Pastikan GEMINI_API_KEY sudah ditambahkan di Vercel Settings -> Environment Variables.");
   }
   return new GoogleGenAI({
     apiKey,
@@ -25,7 +36,7 @@ function getGenAI() {
 }
 
 // 1. Food Image Analysis API Route
-app.post("/api/analyze-food", async (req, res) => {
+app.post(["/api/analyze-food", "/analyze-food"], async (req, res) => {
   try {
     const { imageBase64 } = req.body;
     if (!imageBase64) {
@@ -85,7 +96,7 @@ app.post("/api/analyze-food", async (req, res) => {
 });
 
 // 2. AI Health Chat API Route
-app.post("/api/ai-chat", async (req, res) => {
+app.post(["/api/ai-chat", "/ai-chat"], async (req, res) => {
   try {
     const { history, message, language = "id" } = req.body;
     if (!message) {
@@ -155,4 +166,9 @@ async function startServer() {
   });
 }
 
-startServer();
+export default app;
+
+if (!process.env.VERCEL) {
+  startServer();
+}
+
