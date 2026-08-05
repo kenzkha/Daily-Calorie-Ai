@@ -1,10 +1,47 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-async function callGroqVision(imageBase64: string, groqApiKey: string) {
-  const models = [
-    "llama-3.2-11b-vision-preview",
-    "llama-3.2-90b-vision-preview"
+async function getGroqVisionModels(groqApiKey: string): Promise<string[]> {
+  const fallbackModels = [
+    "llama-3.2-11b-vision-instruct",
+    "llama-3.2-90b-vision-instruct",
+    "qwen/qwen3.6-27b",
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+    "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "llama-3.2-11b-vision",
+    "llama-3.2-90b-vision"
   ];
+
+  try {
+    const res = await fetch("https://api.groq.com/openai/v1/models", {
+      headers: { Authorization: `Bearer ${groqApiKey}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.data)) {
+        const activeIds: string[] = data.data.map((m: any) => m.id);
+        const visionModels = activeIds.filter((id: string) => {
+          const lower = id.toLowerCase();
+          return (
+            lower.includes("vision") ||
+            lower.includes("-vl") ||
+            lower.includes("scout") ||
+            lower.includes("maverick") ||
+            lower.includes("qwen3.6")
+          );
+        });
+        if (visionModels.length > 0) {
+          return Array.from(new Set([...visionModels, ...fallbackModels]));
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to fetch Groq model list dynamically:", err);
+  }
+  return fallbackModels;
+}
+
+async function callGroqVision(imageBase64: string, groqApiKey: string) {
+  const models = await getGroqVisionModels(groqApiKey);
   const formattedUrl = imageBase64.startsWith("data:")
     ? imageBase64
     : `data:image/jpeg;base64,${imageBase64}`;
@@ -17,7 +54,7 @@ async function callGroqVision(imageBase64: string, groqApiKey: string) {
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${groqApiKey}`,
+          Authorization: `Bearer ${groqApiKey}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
@@ -38,7 +75,7 @@ async function callGroqVision(imageBase64: string, groqApiKey: string) {
 
       if (!res.ok) {
         const errTxt = await res.text();
-        throw new Error(`Model ${model} (Status ${res.status}): ${errTxt}`);
+        throw new Error(`Model ${model} (${res.status}): ${errTxt}`);
       }
 
       const data = await res.json();
@@ -53,7 +90,7 @@ async function callGroqVision(imageBase64: string, groqApiKey: string) {
       allErrors.push(err?.message || String(err));
     }
   }
-  throw new Error(allErrors.join(" | "));
+  throw new Error(allErrors.slice(0, 2).join(" | "));
 }
 
 export default async function handler(req: any, res: any) {
