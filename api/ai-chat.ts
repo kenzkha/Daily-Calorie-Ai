@@ -23,6 +23,7 @@ async function callGroqChat(history: any[], message: string, systemInstruction: 
         body: JSON.stringify({
           model,
           messages,
+          max_tokens: 1024,
           temperature: 0.7
         })
       });

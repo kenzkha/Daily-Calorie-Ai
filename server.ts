@@ -57,6 +57,7 @@ async function callGroqChat(history: any[], message: string, systemInstruction: 
         body: JSON.stringify({
           model,
           messages,
+          max_tokens: 1024,
           temperature: 0.7
         })
       });
@@ -78,7 +79,12 @@ async function callGroqChat(history: any[], message: string, systemInstruction: 
 }
 
 async function callGroqVision(imageBase64: string, groqApiKey: string) {
-  const models = ["llama-3.2-11b-vision-preview", "llama-3.2-90b-vision-preview"];
+  const models = [
+    "llama-3.2-11b-vision-preview",
+    "llama-3.2-90b-vision-preview",
+    "llama-3.2-11b-vision-instruct",
+    "llama-3.2-90b-vision-instruct"
+  ];
   const formattedUrl = imageBase64.startsWith("data:")
     ? imageBase64
     : `data:image/jpeg;base64,${imageBase64}`;
@@ -105,13 +111,14 @@ async function callGroqVision(imageBase64: string, groqApiKey: string) {
               ]
             }
           ],
+          max_tokens: 1000,
           temperature: 0.1
         })
       });
 
       if (!res.ok) {
         const errTxt = await res.text();
-        throw new Error(`Groq vision status ${res.status}: ${errTxt}`);
+        throw new Error(`Groq status ${res.status}: ${errTxt}`);
       }
 
       const data = await res.json();
@@ -131,6 +138,8 @@ async function callGroqVision(imageBase64: string, groqApiKey: string) {
 
 // 1. Food Image Analysis API Route
 app.post(["/api/analyze-food", "/analyze-food"], async (req, res) => {
+  let groqErrorDetail = "";
+
   try {
     const { imageBase64 } = req.body || {};
     if (!imageBase64) {
@@ -150,8 +159,9 @@ app.post(["/api/analyze-food", "/analyze-food"], async (req, res) => {
       try {
         const parsed = await callGroqVision(imageBase64, groqKey);
         return res.json(parsed);
-      } catch (groqErr) {
-        console.warn("Groq vision failed, trying Gemini if key available:", groqErr);
+      } catch (groqErr: any) {
+        groqErrorDetail = groqErr?.message || String(groqErr);
+        console.warn("Groq vision failed, trying Gemini if key available:", groqErrorDetail);
       }
     }
 
@@ -213,6 +223,11 @@ app.post(["/api/analyze-food", "/analyze-food"], async (req, res) => {
 
       const errStr = typeof lastErr === "string" ? lastErr : JSON.stringify(lastErr || {}) + " " + (lastErr?.message || "");
       if (errStr.includes("RESOURCE_EXHAUSTED") || errStr.includes("Quota exceeded") || errStr.includes("429") || lastErr?.status === "RESOURCE_EXHAUSTED" || lastErr?.code === 429) {
+        if (groqKey) {
+          return res.status(400).json({
+            error: `⚠️ Analisis foto dengan Groq AI gagal (${groqErrorDetail}). Dan kuota Gemini AI juga habis.`
+          });
+        }
         return res.status(429).json({
           error: "⚠️ Batas kuota gratis Gemini AI terlampaui. Silakan REDEPLOY project Anda di Vercel setelah memasukkan GROQ_API_KEY."
         });
@@ -220,9 +235,20 @@ app.post(["/api/analyze-food", "/analyze-food"], async (req, res) => {
       throw lastErr || new Error("Gagal memproses gambar dengan Gemini AI");
     }
 
+    if (groqErrorDetail) {
+      return res.status(400).json({
+        error: `⚠️ Groq Vision error: ${groqErrorDetail}`
+      });
+    }
+
     return res.status(500).json({ error: "No available AI provider." });
   } catch (error: any) {
     console.error("Error in /api/analyze-food:", error);
+    if (groqErrorDetail) {
+      return res.status(400).json({
+        error: `⚠️ Analisis foto Groq AI gagal: ${groqErrorDetail}`
+      });
+    }
     const errStr = typeof error === "string" ? error : JSON.stringify(error || {}) + " " + (error?.message || "");
     if (errStr.includes("RESOURCE_EXHAUSTED") || errStr.includes("Quota exceeded") || errStr.includes("429") || error?.status === "RESOURCE_EXHAUSTED" || error?.code === 429) {
       return res.status(429).json({
