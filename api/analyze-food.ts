@@ -3,9 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 async function callGroqVision(imageBase64: string, groqApiKey: string) {
   const models = [
     "llama-3.2-11b-vision-preview",
-    "llama-3.2-90b-vision-preview",
-    "llama-3.2-11b-vision-instruct",
-    "llama-3.2-90b-vision-instruct"
+    "llama-3.2-90b-vision-preview"
   ];
   const formattedUrl = imageBase64.startsWith("data:")
     ? imageBase64
@@ -13,7 +11,7 @@ async function callGroqVision(imageBase64: string, groqApiKey: string) {
 
   const promptText = `Analisis gambar ini. Apakah ini gambar makanan/minuman? Jika ya, estimasi nama (Indonesia), kalori(kkal), protein(g), karbohidrat(g), lemak(g). Jika bukan makanan/minuman, atur isFood menjadi false.\n\nKembalikan HANYA JSON valid tanpa teks atau markdown lain:\n{\n  "name": "Nasi Goreng",\n  "calories": 350,\n  "protein": 12,\n  "carbs": 45,\n  "fat": 10,\n  "isFood": true\n}`;
 
-  let lastErr: any = null;
+  const allErrors: string[] = [];
   for (const model of models) {
     try {
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -40,7 +38,7 @@ async function callGroqVision(imageBase64: string, groqApiKey: string) {
 
       if (!res.ok) {
         const errTxt = await res.text();
-        throw new Error(`Groq status ${res.status}: ${errTxt}`);
+        throw new Error(`Model ${model} (Status ${res.status}): ${errTxt}`);
       }
 
       const data = await res.json();
@@ -52,10 +50,10 @@ async function callGroqVision(imageBase64: string, groqApiKey: string) {
       return JSON.parse(content);
     } catch (err: any) {
       console.warn(`Groq vision model ${model} failed:`, err?.message);
-      lastErr = err;
+      allErrors.push(err?.message || String(err));
     }
   }
-  throw lastErr || new Error("Gagal memproses gambar makanan dengan Groq Vision AI.");
+  throw new Error(allErrors.join(" | "));
 }
 
 export default async function handler(req: any, res: any) {
