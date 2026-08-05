@@ -1,5 +1,5 @@
 {
-  "name": "DailyCal",
+  "name": "Daily Calorie | Your Partner",
   "description": "Family health and calorie tracker app featuring AI nutrition camera scanning, water tracker, leaderboard, workout routines, weekly meal plan, and AI health assistant.",
   "requestFramePermissions": ["camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
