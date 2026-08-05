@@ -83,7 +83,7 @@ async function callGroqVision(imageBase64: string, groqApiKey: string) {
     ? imageBase64
     : `data:image/jpeg;base64,${imageBase64}`;
 
-  const promptText = `Analisis gambar ini. Apakah ini gambar makanan/minuman? Jika ya, estimasi nama (Indonesia), kalori(kkal), protein(g), karbohidrat(g), lemak(g). Jika bukan makanan/minuman, atur isFood menjadi false.\n\nKembalikan HANYA format JSON valid berikut tanpa markdown:\n{\n  "name": "nama makanan",\n  "calories": 150,\n  "protein": 10,\n  "carbs": 20,\n  "fat": 5,\n  "isFood": true\n}`;
+  const promptText = `Analisis gambar ini. Apakah ini gambar makanan/minuman? Jika ya, estimasi nama (Indonesia), kalori(kkal), protein(g), karbohidrat(g), lemak(g). Jika bukan makanan/minuman, atur isFood menjadi false.\n\nKembalikan HANYA JSON valid tanpa teks atau markdown lain:\n{\n  "name": "Nasi Goreng",\n  "calories": 350,\n  "protein": 12,\n  "carbs": 45,\n  "fat": 10,\n  "isFood": true\n}`;
 
   let lastErr: any = null;
   for (const model of models) {
@@ -105,8 +105,7 @@ async function callGroqVision(imageBase64: string, groqApiKey: string) {
               ]
             }
           ],
-          response_format: { type: "json_object" },
-          temperature: 0.2
+          temperature: 0.1
         })
       });
 
@@ -117,8 +116,11 @@ async function callGroqVision(imageBase64: string, groqApiKey: string) {
 
       const data = await res.json();
       const content = data.choices?.[0]?.message?.content || "";
-      const cleanJson = content.replace(/```json\n?|\n?```/g, "").trim();
-      return JSON.parse(cleanJson);
+      const match = content.match(/\{[\s\S]*\}/);
+      if (match) {
+        return JSON.parse(match[0]);
+      }
+      return JSON.parse(content);
     } catch (err: any) {
       console.warn(`Groq vision model ${model} failed:`, err?.message);
       lastErr = err;
@@ -144,9 +146,13 @@ app.post(["/api/analyze-food", "/analyze-food"], async (req, res) => {
       });
     }
 
-    if (groqKey && !geminiKey) {
-      const parsed = await callGroqVision(imageBase64, groqKey);
-      return res.json(parsed);
+    if (groqKey) {
+      try {
+        const parsed = await callGroqVision(imageBase64, groqKey);
+        return res.json(parsed);
+      } catch (groqErr) {
+        console.warn("Groq vision failed, trying Gemini if key available:", groqErr);
+      }
     }
 
     if (geminiKey) {
@@ -205,28 +211,13 @@ app.post(["/api/analyze-food", "/analyze-food"], async (req, res) => {
         return res.json(parsed);
       }
 
-      if (groqKey) {
-        console.warn("Gemini vision failed or rate limited. Falling back to Groq Vision...");
-        try {
-          const parsed = await callGroqVision(imageBase64, groqKey);
-          return res.json(parsed);
-        } catch (groqErr) {
-          console.error("Groq vision fallback failed:", groqErr);
-        }
-      }
-
       const errStr = typeof lastErr === "string" ? lastErr : JSON.stringify(lastErr || {}) + " " + (lastErr?.message || "");
       if (errStr.includes("RESOURCE_EXHAUSTED") || errStr.includes("Quota exceeded") || errStr.includes("429") || lastErr?.status === "RESOURCE_EXHAUSTED" || lastErr?.code === 429) {
         return res.status(429).json({
-          error: "⚠️ Batas kuota gratis Gemini AI terlampaui. Tambahkan GROQ_API_KEY gratis dari https://console.groq.com/keys di Vercel agar analisis gambar selalu berjalan lancar, atau tunggu 30-60 detik."
+          error: "⚠️ Batas kuota gratis Gemini AI terlampaui. Silakan REDEPLOY project Anda di Vercel setelah memasukkan GROQ_API_KEY."
         });
       }
       throw lastErr || new Error("Gagal memproses gambar dengan Gemini AI");
-    }
-
-    if (groqKey) {
-      const parsed = await callGroqVision(imageBase64, groqKey);
-      return res.json(parsed);
     }
 
     return res.status(500).json({ error: "No available AI provider." });

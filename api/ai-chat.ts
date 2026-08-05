@@ -88,10 +88,14 @@ export default async function handler(req: any, res: any) {
     const targetLang = langMap[language] || "Indonesia";
     const systemInstruction = `Anda adalah Jarvis, asisten kesehatan AI yang ramah, informatif, dan pintar. Jawab dengan bahasa ${targetLang} yang santai, ringkas (maksimal 3 paragraf), dan fokus pada gaya hidup sehat, nutrisi, resep diet, dan olahraga.`;
 
-    // Try Groq first if available, or try Gemini then fallback to Groq
-    if (groqKey && !geminiKey) {
-      const text = await callGroqChat(history, message, systemInstruction, groqKey);
-      return res.status(200).json({ text });
+    // Try Groq first if key exists (higher rate limit & free tier)
+    if (groqKey) {
+      try {
+        const text = await callGroqChat(history, message, systemInstruction, groqKey);
+        return res.status(200).json({ text });
+      } catch (groqErr) {
+        console.warn("Groq chat failed, falling back to Gemini if available:", groqErr);
+      }
     }
 
     if (geminiKey) {
@@ -128,21 +132,10 @@ export default async function handler(req: any, res: any) {
         return res.status(200).json({ text: response.text });
       }
 
-      // Gemini failed / rate limited. Fallback to Groq if key exists!
-      if (groqKey) {
-        console.warn("Gemini failed or rate limited. Falling back to Groq AI...");
-        try {
-          const text = await callGroqChat(history, message, systemInstruction, groqKey);
-          return res.status(200).json({ text });
-        } catch (groqErr) {
-          console.error("Groq fallback also failed:", groqErr);
-        }
-      }
-
       const errStr = typeof lastErr === "string" ? lastErr : JSON.stringify(lastErr || {}) + " " + (lastErr?.message || "");
       if (errStr.includes("RESOURCE_EXHAUSTED") || errStr.includes("Quota exceeded") || errStr.includes("429") || lastErr?.status === "RESOURCE_EXHAUSTED" || lastErr?.code === 429) {
         return res.status(200).json({
-          text: "⏳ **Batas Kuota Penggunaan Gemini AI Terlampaui**\n\nUntuk menghindari masalah kuota, Anda dapat menambahkan **GROQ_API_KEY** gratis dari [Groq Console](https://console.groq.com/keys) ke Environment Variables di Vercel.\n\nAtau silakan **tunggu 30 - 60 detik** lalu coba kirim pesan lagi."
+          text: "⏳ **Batas Kuota Penggunaan Gemini AI Terlampaui**\n\nJika Anda sudah memasukkan **GROQ_API_KEY** di Vercel, pastikan Anda menekan tombol **REDEPLOY** di Vercel Dashboard agar API Key baru aktif!"
         });
       }
       throw lastErr || new Error("Gagal mendapatkan balasan dari Gemini AI.");
