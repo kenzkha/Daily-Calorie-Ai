@@ -89,10 +89,19 @@ const fetchWithRetry = async (url: string, options: RequestInit, retries = 3) =>
       const response = await fetch(url, options);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        let rawErr = errorData.error;
+        if (typeof rawErr === "object" && rawErr !== null) {
+          rawErr = rawErr.message || JSON.stringify(rawErr);
+        }
+        let errMsg = rawErr || `HTTP error! status: ${response.status}`;
+        if (typeof errMsg === "string" && (errMsg.includes("RESOURCE_EXHAUSTED") || errMsg.includes("Quota exceeded") || errMsg.includes("429"))) {
+          errMsg = "⚠️ Batas kuota gratis Gemini AI terlampaui (Rate Limit / Quota Exceeded). Silakan tunggu 30 - 60 detik sebelum mencoba lagi.";
+        }
+        throw new Error(errMsg);
       }
       return await response.json();
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.message?.includes("Batas kuota gratis")) throw err;
       if (i === retries - 1) throw err;
       await new Promise(resolve => setTimeout(resolve, delays[i]));
     }
