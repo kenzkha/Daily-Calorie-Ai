@@ -5,11 +5,11 @@ import {
   GlassWater, Minus, Image as ImageIcon, Calendar, ChevronDown, ChevronUp, 
   Users, KeyRound, LogOut, ShieldCheck, Menu, Dumbbell, BookOpen, 
   Trophy, Home, Crown, PlayCircle, Timer, Sparkles, ChefHat, BarChart3, Send, Heart, ExternalLink,
-  Moon, Sun, Globe, Bot
+  Moon, Sun, Globe, Bot, Lock, LogIn, ShieldAlert, Check
 } from 'lucide-react';
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, Auth } from 'firebase/auth';
-import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, Firestore } from 'firebase/firestore';
+import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, Auth } from 'firebase/auth';
+import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, getDoc, getDocs, Firestore } from 'firebase/firestore';
 
 // --- TYPES ---
 interface Profile {
@@ -318,8 +318,14 @@ export default function App() {
   const [familyCode, setFamilyCode] = useState<string | null>(() => {
     return localStorage.getItem('dailycal_family_code') || null;
   });
+  const [roomPin, setRoomPin] = useState<string | null>(() => {
+    return localStorage.getItem('dailycal_room_pin') || null;
+  });
   const [isCheckingFamily, setIsCheckingFamily] = useState(true);
   const [codeInput, setCodeInput] = useState('');
+  const [pinInput, setPinInput] = useState('');
+  const [isJoiningRoom, setIsJoiningRoom] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   // Data Mentah 
   const [allLogsRaw, setAllLogsRaw] = useState<FoodLog[]>(() => {
@@ -447,15 +453,19 @@ export default function App() {
       const loadedProfiles: Profile[] = [];
       snapshot.forEach(docSnap => loadedProfiles.push({ id: docSnap.id, ...docSnap.data() } as Profile));
       
+      setProfiles(loadedProfiles);
+      localStorage.setItem('dailycal_profiles', JSON.stringify(loadedProfiles));
       if (loadedProfiles.length > 0) {
-        setProfiles(loadedProfiles);
-        localStorage.setItem('dailycal_profiles', JSON.stringify(loadedProfiles));
         setActiveProfileId(current => {
           if (!current || !loadedProfiles.find(p => p.id === current)) return loadedProfiles[0].id;
           return current;
         });
       }
-    }, (error) => console.error("Profile error:", error));
+      setIsCheckingFamily(false);
+    }, (error) => {
+      console.error("Profile error:", error);
+      setIsCheckingFamily(false);
+    });
 
     const logsRef = collection(db, 'artifacts', appId, 'public', 'data', `family_${safeCode}_food`);
     const unsubscribeLogs = onSnapshot(logsRef, (snapshot) => {
@@ -578,21 +588,150 @@ export default function App() {
     setProfileForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleJoinFamily = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleJoinFamily = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!codeInput.trim()) return;
     const cleanCode = codeInput.trim();
-    setFamilyCode(cleanCode);
-    localStorage.setItem('dailycal_family_code', cleanCode);
+    const cleanPin = pinInput.trim();
+
+    setIsJoiningRoom(true);
+    setJoinError(null);
+
+    const safeCode = cleanCode.replace(/[^a-zA-Z0-9]/g, '_');
 
     if (user && db) {
       try {
+        const metaRef = doc(db, 'artifacts', appId, 'public', 'data', `family_${safeCode}_meta`, 'info');
+        const metaSnap = await getDoc(metaRef);
+
+        if (metaSnap.exists()) {
+          const roomData = metaSnap.data();
+          if (roomData.pin && roomData.pin !== cleanPin) {
+            setJoinError("PIN / Kata Sandi Ruang Keluarga salah! Akses ditolak.");
+            setIsJoiningRoom(false);
+            return;
+          }
+        } else {
+          await setDoc(metaRef, {
+            familyCode: cleanCode,
+            pin: cleanPin || null,
+            createdAt: Date.now(),
+            ownerUid: user.uid || 'anon'
+          });
+        }
+
+        const profilesRef = collection(db, 'artifacts', appId, 'public', 'data', `family_${safeCode}_profiles`);
+        const profilesSnap = await getDocs(profilesRef);
+        const loadedProfiles: Profile[] = [];
+        profilesSnap.forEach(docSnap => loadedProfiles.push({ id: docSnap.id, ...docSnap.data() } as Profile));
+
+        if (loadedProfiles.length > 0) {
+          setProfiles(loadedProfiles);
+          localStorage.setItem('dailycal_profiles', JSON.stringify(loadedProfiles));
+          const savedActive = localStorage.getItem('dailycal_active_profile_id');
+          if (savedActive && loadedProfiles.find(p => p.id === savedActive)) {
+            setActiveProfileId(savedActive);
+          } else {
+            setActiveProfileId(loadedProfiles[0].id);
+          }
+        } else {
+          setProfiles([]);
+          localStorage.removeItem('dailycal_profiles');
+        }
+
+        setFamilyCode(cleanCode);
+        setRoomPin(cleanPin || null);
+        localStorage.setItem('dailycal_family_code', cleanCode);
+        if (cleanPin) localStorage.setItem('dailycal_room_pin', cleanPin);
+        else localStorage.removeItem('dailycal_room_pin');
+
         await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'account'), {
-          familyCode: cleanCode
+          familyCode: cleanCode,
+          roomPin: cleanPin || null
         }, { merge: true });
-      } catch (err) {
-        console.error("Firestore family code save error:", err);
+
+      } catch (err: any) {
+        console.error("Join family error:", err);
+        setJoinError("Gagal menghubungkan ke ruang keluarga. Silakan periksa koneksi internet.");
+      } finally {
+        setIsJoiningRoom(false);
       }
+    } else {
+      setFamilyCode(cleanCode);
+      setRoomPin(cleanPin || null);
+      localStorage.setItem('dailycal_family_code', cleanCode);
+      if (cleanPin) localStorage.setItem('dailycal_room_pin', cleanPin);
+      setIsJoiningRoom(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    if (!auth) {
+      setJoinError("Layanan Autentikasi Firebase belum terkonfigurasi.");
+      return;
+    }
+    setIsJoiningRoom(true);
+    setJoinError(null);
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const gUser = result.user;
+      setUser(gUser);
+
+      const gEmailName = gUser.email ? gUser.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '') : `user_${gUser.uid.substring(0,6)}`;
+      const googleFamilyCode = `Keluarga_${gEmailName}`;
+
+      setCodeInput(googleFamilyCode);
+      setPinInput('');
+
+      const safeCode = googleFamilyCode.replace(/[^a-zA-Z0-9]/g, '_');
+      if (db) {
+        const metaRef = doc(db, 'artifacts', appId, 'public', 'data', `family_${safeCode}_meta`, 'info');
+        const metaSnap = await getDoc(metaRef);
+        if (!metaSnap.exists()) {
+          await setDoc(metaRef, {
+            familyCode: googleFamilyCode,
+            pin: null,
+            createdAt: Date.now(),
+            ownerUid: gUser.uid,
+            ownerEmail: gUser.email
+          });
+        }
+
+        const profilesRef = collection(db, 'artifacts', appId, 'public', 'data', `family_${safeCode}_profiles`);
+        const profilesSnap = await getDocs(profilesRef);
+        const loadedProfiles: Profile[] = [];
+        profilesSnap.forEach(docSnap => loadedProfiles.push({ id: docSnap.id, ...docSnap.data() } as Profile));
+
+        if (loadedProfiles.length > 0) {
+          setProfiles(loadedProfiles);
+          localStorage.setItem('dailycal_profiles', JSON.stringify(loadedProfiles));
+          setActiveProfileId(loadedProfiles[0].id);
+        } else {
+          setProfiles([]);
+          localStorage.removeItem('dailycal_profiles');
+        }
+
+        setFamilyCode(googleFamilyCode);
+        setRoomPin(null);
+        localStorage.setItem('dailycal_family_code', googleFamilyCode);
+        localStorage.removeItem('dailycal_room_pin');
+
+        await setDoc(doc(db, 'artifacts', appId, 'users', gUser.uid, 'settings', 'account'), {
+          familyCode: googleFamilyCode,
+          roomPin: null
+        }, { merge: true });
+      } else {
+        setFamilyCode(googleFamilyCode);
+        localStorage.setItem('dailycal_family_code', googleFamilyCode);
+      }
+    } catch (err: any) {
+      console.error("Google login error:", err);
+      if (err.code !== 'auth/popup-closed-by-user') {
+        setJoinError("Login Google gagal: " + (err.message || 'Silakan coba lagi.'));
+      }
+    } finally {
+      setIsJoiningRoom(false);
     }
   };
 
@@ -602,10 +741,12 @@ export default function App() {
 
   const confirmLeaveFamily = async () => {
     setFamilyCode(null);
+    setRoomPin(null);
     localStorage.removeItem('dailycal_family_code');
+    localStorage.removeItem('dailycal_room_pin');
     if (user && db) {
       try {
-        await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'account'), { familyCode: null });
+        await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'account'), { familyCode: null, roomPin: null });
       } catch (err) { console.error(err); }
     }
     setIsConfirmLeaveOpen(false);
@@ -861,19 +1002,95 @@ export default function App() {
   if (!familyCode) {
     return (
       <div className="bg-gray-50 min-h-screen font-sans flex items-center justify-center p-4">
-        <div className="bg-white w-full max-w-sm rounded-3xl p-8 shadow-xl text-center">
-          <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+        <div className="bg-white w-full max-w-sm rounded-3xl p-8 shadow-xl text-center border border-gray-100">
+          <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
             <ShieldCheck className="w-8 h-8 text-green-600"/>
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Kode Keluarga</h2>
-          <p className="text-gray-500 text-sm mb-8">Buat kode rahasia baru atau masukkan kode keluarga Anda untuk sinkronisasi antar perangkat.</p>
-          <form onSubmit={handleJoinFamily} className="space-y-4">
-            <div className="relative">
-              <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input type="text" required placeholder="Cth: KeluargaBudi123" value={codeInput} onChange={(e) => setCodeInput(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-4 pl-12 pr-4 text-gray-800 font-bold focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"/>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Ruang Keluarga</h2>
+          <p className="text-gray-500 text-xs mb-6 leading-relaxed">
+            Masukkan Kode Keluarga & PIN Rahasia untuk masuk atau membuat ruang sinkronisasi antar HP.
+          </p>
+
+          {joinError && (
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2 text-left">
+              <AlertCircle className="w-5 h-5 shrink-0 text-red-500" />
+              <span>{joinError}</span>
             </div>
-            <button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-2xl shadow-lg transition-transform active:scale-95">Mulai Sinkronisasi</button>
+          )}
+
+          <form onSubmit={handleJoinFamily} className="space-y-3.5">
+            <div>
+              <label className="block text-left text-[11px] font-bold text-gray-500 uppercase mb-1">
+                Kode Keluarga
+              </label>
+              <div className="relative">
+                <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input 
+                  type="text" 
+                  required 
+                  placeholder="Cth: KeluargaBudi123" 
+                  value={codeInput} 
+                  onChange={(e) => setCodeInput(e.target.value)} 
+                  className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3.5 pl-12 pr-4 text-gray-800 font-bold focus:outline-none focus:ring-2 focus:ring-green-500 transition-all text-sm"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-left text-[11px] font-bold text-gray-500 uppercase mb-1 flex justify-between">
+                <span>PIN / Kata Sandi (Opsional)</span>
+                <span className="text-[10px] text-gray-400 font-normal">Kunci Keamanan</span>
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input 
+                  type="password" 
+                  placeholder="PIN Rahasia (Cth: 1234)" 
+                  value={pinInput} 
+                  onChange={(e) => setPinInput(e.target.value)} 
+                  className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3.5 pl-12 pr-4 text-gray-800 font-bold focus:outline-none focus:ring-2 focus:ring-green-500 transition-all text-sm"
+                />
+              </div>
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={isJoiningRoom}
+              className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 mt-2 cursor-pointer"
+            >
+              {isJoiningRoom ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Verifikasi Data Cloud...</span>
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-5 h-5" />
+                  <span>Mulai / Masuk Ruang</span>
+                </>
+              )}
+            </button>
           </form>
+
+          {auth && (
+            <div className="mt-6 pt-5 border-t border-gray-100">
+              <p className="text-xs text-gray-400 mb-3 font-medium">Atau gunakan akun Google untuk masuk otomatis:</p>
+              <button 
+                onClick={handleGoogleSignIn}
+                disabled={isJoiningRoom}
+                type="button"
+                className="w-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold py-3 px-4 rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+                <span>Login dengan Google</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
