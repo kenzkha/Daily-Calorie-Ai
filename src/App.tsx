@@ -123,7 +123,40 @@ const uiDict: Record<string, Record<string, string>> = {
     editProfile: 'Edit Profil', newProfile: 'Profil Baru', nickname: 'Nama Panggilan', age: 'Umur (Tahun)', gender: 'Jenis Kelamin', male: 'Pria', female: 'Wanita', weight: 'Berat (kg)', height: 'Tinggi (cm)', activityLevel: 'Level Aktivitas Fisik', saveAndCalculate: 'Simpan & Hitung Target',
     historyTitle: 'Riwayat', noHistory: 'Belum ada riwayat tercatat.', leaveTitle: 'Keluar Ruang Keluarga?', leaveDesc: 'Data Anda tidak akan terhapus, namun Anda akan keluar dari sinkronisasi ruang keluarga ini.', yesLeave: 'Ya, Keluar',
     familyCodeTitle: 'Kode Keluarga', familyCodeDesc: 'Buat kode rahasia baru atau masukkan kode keluarga Anda untuk sinkronisasi antar perangkat.', syncBtn: 'Mulai Sinkronisasi', welcome: 'Selamat Datang!', roomCreated: 'Ruang berhasil dibuat. Tambahkan anggota keluarga pertama.', createProfile: 'Buat Profil Anda', addMember: 'Tambah Anggota', members: 'Anggota', inDevelopment: 'Fitur ini sedang dalam tahap pengembangan untuk menjadikan aplikasi ini "Super App" kesehatan Anda.', backToJournal: 'Kembali ke Jurnal',
-    aiGreeting: 'Halo! Saya Jarvis, asisten kesehatan AI pintar Anda. Ada yang bisa saya bantu tentang kalori, olahraga, atau resep makanan hari ini?'
+    aiGreeting: 'Halo! Saya Jarvis, asisten kesehatan AI pintar Anda. Ada yang bisa saya bantu tentang kalori, olahraga, atau resep makanan hari ini?',
+    prev: 'Sebelum', next: 'Sesudah', today: 'Hari Ini', toToday: 'Ke Hari Ini', journalDate: 'Jurnal Tanggal:', filled: 'Terisi',
+    dailySummaryTitle: 'Kesimpulan & Evaluasi Nutrisi',
+    dailySummaryEmpty: 'Belum ada catatan makanan untuk hari ini. Gunakan fitur kamera atau foto galeri untuk mencatatkan konsumsi makanan Anda!',
+    calStatusLow: 'Asupan kalori baru terpenuhi {pct}% dari target harian ({total}/{goal} kkal). Tingkatkan asupan makanan sehat agar stamina tubuh tetap optimal.',
+    calStatusIdeal: 'Sangat baik! Asupan kalori terpenuhi {pct}% dari target harian ({total}/{goal} kkal). Keseimbangan nutrisi Anda berada di zona hijau ideal.',
+    calStatusOver: 'Asupan kalori hari ini mencapai {pct}% ({total}/{goal} kkal), melampaui target harian. Seimbangkan dengan jalan kaki atau olahraga ringan.',
+    futureAdviceLabel: 'Saran Kedepan:',
+    waterAdvice: 'Tingkatkan konsumsi air putih minimal 8 gelas sehari untuk mendukung metabolisme.',
+    proteinAdvice: 'Tambahkan porsi protein (telur, ayam, tahu/tempe) untuk mendukung otot dan stamina harian.',
+    balanceAdvice: 'Pertahankan porsi gizi seimbang dan cukupi waktu istirahat malam Anda.',
+    calProgress: 'Progress Kalori', waterProgress: 'Progress Air Minum',
+    weeklySummaryTitle: 'Kesimpulan & Saran Mingguan (7 Hari Terakhir)',
+    avgCaloriesLabel: 'Rata-Rata Kalori', avgHydrationLabel: 'Rata-Rata Hidrasi',
+    weekEvalLow: 'Rata-rata asupan kalori 7 hari terakhir tergolong di bawah batas aman.',
+    weekTipLow: 'Saran Minggu Depan: Tingkatkan porsi karbohidrat kompleks & protein sehat saat sarapan dan makan siang.',
+    weekEvalHigh: 'Rata-rata kalori mingguan sedikit melampaui batas target harian.',
+    weekTipHigh: 'Saran Minggu Depan: Kurangi camilan malam & tingkatkan durasi jalan kaki / latihan kardio ringan.',
+    weekEvalIdeal: 'Rata-rata kalori mingguan Anda sangat ideal dan sesuai dengan kebutuhan tubuh!',
+    weekTipIdeal: 'Saran Minggu Depan: Pertahankan pola nutrisi ini dan pastikan minum air putih minimal 2.000 ml setiap hari.',
+    monthlySummaryTitle: 'Kesimpulan & Saran Bulanan (30 Hari Terakhir)',
+    daysLoggedLabel: 'Jurnal Terisi', daysUnit: 'Hari',
+    monthEvalHigh: 'Sangat Disiplin! Anda aktif mencatatkan jurnal nutrisi selama {days} dari 30 hari terakhir.',
+    monthEvalMed: 'Cukup Teratur! Tercatat {days} hari jurnal nutrisi terisi bulan ini.',
+    monthEvalLow: 'Tercatat {days} hari jurnal terisi bulan ini. Mari dorong konsistensi harian Anda.',
+    monthTipLow: 'Saran Strategis Bulan Depan: Perhatikan konsistensi makan utama 3 kali sehari agar energi tidak cepat habis.',
+    monthTipHigh: 'Saran Strategis Bulan Depan: Seimbangkan porsi makan dengan meningkatkan porsi sayuran hijau & buah segar.',
+    monthTipIdeal: 'Saran Strategis Bulan Depan: Keseimbangan gizi bulanan berada di zona hijau sempurna. Pertahankan!',
+    healthTipTitle: 'Saran Kesehatan Nutrisi:',
+    tipHighFat: 'Makanan ini cukup tinggi lemak. Imbangi dengan perbanyak minum air putih dan pilih sayuran hijau segar.',
+    tipHighProtein: 'Sangat kaya protein! Bagus untuk pembentukan jaringan otot, stamina harian, dan menjaga rasa kenyang lebih lama.',
+    tipHighCarbs: 'Asupan karbohidrat tinggi sebagai bahan bakar energi. Cocok dikonsumsi sebelum atau sesudah beraktivitas aktif.',
+    tipBalanced: 'Porsi nutrisi seimbang! Pastikan pemenuhan kebutuhan hidrasi air putih harian Anda terpenuhi.',
+    familySuggestions: 'Saran Nama Keluarga Unik (Ketuk untuk pilih):', selectCalendarDate: 'Pilih Tanggal Jurnal'
   },
   en: {
     appName: 'DailyCal', dash: 'Daily Journal', lead: 'Leaderboard', work: 'Workouts', rec: 'Weekly Meal Plan', anal: 'Family Analytics', ask: 'Ask AI', shop: 'Healthy Store',
@@ -138,7 +171,40 @@ const uiDict: Record<string, Record<string, string>> = {
     editProfile: 'Edit Profile', newProfile: 'New Profile', nickname: 'Nickname', age: 'Age (Years)', gender: 'Gender', male: 'Male', female: 'Female', weight: 'Weight (kg)', height: 'Height (cm)', activityLevel: 'Activity Level', saveAndCalculate: 'Save & Calculate Target',
     historyTitle: 'History', noHistory: 'No history recorded yet.', leaveTitle: 'Leave Family Room?', leaveDesc: 'Your data will not be deleted, but you will leave this family room sync.', yesLeave: 'Yes, Leave',
     familyCodeTitle: 'Family Code', familyCodeDesc: 'Create or enter your family code to sync across devices.', syncBtn: 'Start Syncing', welcome: 'Welcome!', roomCreated: 'Room created successfully. Add the first family member.', createProfile: 'Create Your Profile', addMember: 'Add Member', members: 'Members', inDevelopment: 'This feature is under development to make this your health Super App.', backToJournal: 'Back to Journal',
-    aiGreeting: 'Hello! I am Jarvis, your smart AI health assistant. How can I help you with calories, workouts, or recipes today?'
+    aiGreeting: 'Hello! I am Jarvis, your smart AI health assistant. How can I help you with calories, workouts, or recipes today?',
+    prev: 'Prev', next: 'Next', today: 'Today', toToday: 'To Today', journalDate: 'Journal Date:', filled: 'Filled',
+    dailySummaryTitle: 'Daily Nutrition Summary & Evaluation',
+    dailySummaryEmpty: 'No food logs for today yet. Use the camera or gallery feature to log your meal intake!',
+    calStatusLow: 'Calorie intake reached {pct}% of daily target ({total}/{goal} kcal). Increase healthy food intake for optimal stamina.',
+    calStatusIdeal: 'Great job! Calorie intake reached {pct}% of daily target ({total}/{goal} kcal). Your nutrition balance is in the ideal green zone.',
+    calStatusOver: 'Today\'s calorie intake reached {pct}% ({total}/{goal} kcal), exceeding daily target. Balance with walking or light exercise.',
+    futureAdviceLabel: 'Future Advice:',
+    waterAdvice: 'Increase water intake to at least 8 glasses a day to support metabolism.',
+    proteinAdvice: 'Add protein portions (eggs, chicken, tofu/tempeh) to support muscle and daily stamina.',
+    balanceAdvice: 'Maintain balanced nutrition portions and get sufficient night rest.',
+    calProgress: 'Calorie Progress', waterProgress: 'Water Progress',
+    weeklySummaryTitle: 'Weekly Summary & Advice (Past 7 Days)',
+    avgCaloriesLabel: 'Avg Calories', avgHydrationLabel: 'Avg Hydration',
+    weekEvalLow: 'Average calorie intake over the past 7 days is below safe threshold.',
+    weekTipLow: 'Next Week Advice: Increase complex carbs & healthy protein at breakfast and lunch.',
+    weekEvalHigh: 'Weekly average calories slightly exceed daily target limit.',
+    weekTipHigh: 'Next Week Advice: Reduce late-night snacks & increase walking duration or light cardio.',
+    weekEvalIdeal: 'Your weekly average calories are ideal and match your body\'s needs!',
+    weekTipIdeal: 'Next Week Advice: Maintain this nutrition pattern and drink at least 2,000 ml water daily.',
+    monthlySummaryTitle: 'Monthly Summary & Advice (Past 30 Days)',
+    daysLoggedLabel: 'Days Logged', daysUnit: 'Days',
+    monthEvalHigh: 'Very disciplined! You actively logged nutrition for {days} of the past 30 days.',
+    monthEvalMed: 'Quite consistent! Recorded {days} days of nutrition logs this month.',
+    monthEvalLow: 'Recorded {days} days of logs this month. Let\'s boost your daily consistency!',
+    monthTipLow: 'Next Month Advice: Focus on consistent 3 main meals daily so your energy stays steady.',
+    monthTipHigh: 'Next Month Advice: Balance food portions by increasing green vegetables & fresh fruits.',
+    monthTipIdeal: 'Next Month Advice: Monthly nutrition balance is in the perfect green zone. Keep it up!',
+    healthTipTitle: 'Nutrition Health Advice:',
+    tipHighFat: 'This food is high in fat. Balance it by drinking plenty of water and choosing fresh green vegetables.',
+    tipHighProtein: 'Very rich in protein! Great for muscle building, daily stamina, and keeping you full longer.',
+    tipHighCarbs: 'High carb intake as energy fuel. Ideal consumed before or after active physical exercise.',
+    tipBalanced: 'Balanced nutrition portion! Ensure your daily water hydration needs are fulfilled.',
+    familySuggestions: 'Unique Family Name Suggestions (Tap to select):', selectCalendarDate: 'Select Journal Date'
   },
   zh: {
     appName: 'DailyCal', dash: '每日日记', lead: '排行榜', work: '锻炼计划', rec: '每周食谱', anal: '家庭分析', ask: '咨询AI', shop: '健康商店',
@@ -153,7 +219,40 @@ const uiDict: Record<string, Record<string, string>> = {
     editProfile: '编辑资料', newProfile: '新建资料', nickname: '昵称', age: '年龄（岁）', gender: '性别', male: '男', female: '女', weight: '体重 (kg)', height: '身高 (cm)', activityLevel: '活动量', saveAndCalculate: '保存并计算目标',
     historyTitle: '历史记录', noHistory: '暂无历史记录。', leaveTitle: '退出家庭房间？', leaveDesc: '您的数据不会被删除，但将退出此房间的同步。', yesLeave: '确定退出',
     familyCodeTitle: '家庭代码', familyCodeDesc: '创建或输入您的家庭代码以跨设备同步。', syncBtn: '开始同步', welcome: '欢迎！', roomCreated: '房间创建成功。请添加第一个家庭成员。', createProfile: '创建您的资料', addMember: '添加成员', members: '成员', inDevelopment: '该功能正在开发中，将成为您的健康超级应用。', backToJournal: '返回日记',
-    aiGreeting: '你好！我是 Jarvis，您的智能 AI 健康助手。今天需要我帮您了解卡路里、健身或食谱吗？'
+    aiGreeting: '你好！我是 Jarvis，您的智能 AI 健康助手。今天需要我帮您了解卡路里、健身或食谱吗？',
+    prev: '上一页', next: '下一页', today: '今天', toToday: '回到今天', journalDate: '日志日期：', filled: '已记录',
+    dailySummaryTitle: '每日营养总结与评估',
+    dailySummaryEmpty: '今日尚无饮食记录。请使用相机或图库拍照记录您的饮食！',
+    calStatusLow: '卡路里摄入达每日目标 {pct}%（{total}/{goal} 千卡）。请增加健康饮食以维持最佳体力。',
+    calStatusIdeal: '非常棒！卡路里摄入达每日目标 {pct}%（{total}/{goal} 千卡）。您的营养处于理想绿色区域。',
+    calStatusOver: '今日卡路里摄入达 {pct}%（{total}/{goal} 千卡），超出每日目标。建议进行散步或轻度运动平衡。',
+    futureAdviceLabel: '后续建议：',
+    waterAdvice: '每天至少喝 8 杯水以促进新陈代谢。',
+    proteinAdvice: '增加蛋白质（鸡蛋、鸡肉、豆腐）以补充肌肉与日常体力。',
+    balanceAdvice: '保持均衡营养膳食，并保证充沛的夜间休息。',
+    calProgress: '卡路里进度', waterProgress: '饮水进度',
+    weeklySummaryTitle: '每周总结与建议（过去7天）',
+    avgCaloriesLabel: '平均卡路里', avgHydrationLabel: '平均饮水量',
+    weekEvalLow: '过去 7 天平均卡路里摄入低于安全水平。',
+    weekTipLow: '下周建议：早餐和午餐增加复合碳水与优质蛋白质。',
+    weekEvalHigh: '周平均卡路里略微超出每日目标限制。',
+    weekTipHigh: '下周建议：减少夜宵并增加散步或轻度有氧运动。',
+    weekEvalIdeal: '您的周平均卡路里非常理想，完全符合身体需求！',
+    weekTipIdeal: '下周建议：保持此营养模式，每天饮水至少 2000 毫升。',
+    monthlySummaryTitle: '每月总结与建议（过去30天）',
+    daysLoggedLabel: '打卡天数', daysUnit: '天',
+    monthEvalHigh: '非常自律！过去 30 天中您记录了 {days} 天营养日记。',
+    monthEvalMed: '非常规律！本月已记录 {days} 天营养日记。',
+    monthEvalLow: '本月已记录 {days} 天。让我们继续提升每日打卡习惯！',
+    monthTipLow: '下月建议：保持一日三餐规律，防止精力过快耗尽。',
+    monthTipHigh: '下月建议：增加绿叶蔬菜与新鲜水果，均衡每餐比例。',
+    monthTipIdeal: '下月建议：每月营养处于完美绿区。请继续保持！',
+    healthTipTitle: '营养健康建议：',
+    tipHighFat: '此食物脂肪含量较高。建议多喝水并搭配新鲜绿叶蔬菜。',
+    tipHighProtein: '蛋白质非常丰富！有助于肌肉合成、维持体力与长久饱腹感。',
+    tipHighCarbs: '高碳水化合物可提供充沛能量。非常适合运动前后食用。',
+    tipBalanced: '营养比例非常均衡！请确保补充足够的日常水分。',
+    familySuggestions: '独特家庭名称建议（点击选择）：', selectCalendarDate: '选择日志日期'
   },
   ja: {
     appName: 'DailyCal', dash: '毎日の日記', lead: 'リーダーボード', work: 'ワークアウト', rec: '食事プラン', anal: '家族分析', ask: 'AIに聞く', shop: '健康ストア',
@@ -168,7 +267,40 @@ const uiDict: Record<string, Record<string, string>> = {
     editProfile: 'プロフィール編集', newProfile: '新規プロフィール', nickname: 'ニックネーム', age: '年齢 (歳)', gender: '性別', male: '男性', female: '女性', weight: '体重 (kg)', height: '身長 (cm)', activityLevel: '活動レベル', saveAndCalculate: '保存して目標計算',
     historyTitle: '履歴', noHistory: '履歴がありません。', leaveTitle: '部屋を出ますか？', leaveDesc: 'データは削除されませんが、この部屋の同期から退出します。', yesLeave: '出る',
     familyCodeTitle: '家族コード', familyCodeDesc: 'デバイス間で同期するためにコードを作成または入力してください。', syncBtn: '同期を開始', welcome: 'ようこそ！', roomCreated: '部屋を作成しました。最初のメンバーを追加してください。', createProfile: 'プロフィール作成', addMember: 'メンバー追加', members: 'メンバー', inDevelopment: 'この機能は開発中です。', backToJournal: '日誌に戻る',
-    aiGreeting: 'こんにちは！AI健康アシスタントのJarvisです。本日のカロリー、運動、レシピについてお手伝いできることはありますか？'
+    aiGreeting: 'こんにちは！AI健康アシスタントのJarvisです。本日のカロリー、運動、レシピについてお手伝いできることはありますか？',
+    prev: '前へ', next: '次へ', today: '今日', toToday: '今日へ', journalDate: '日誌の日付:', filled: '記録あり',
+    dailySummaryTitle: '本日の栄養まとめと評価',
+    dailySummaryEmpty: '本日の食事記録がまだありません。カメラまたはギャラリーから食事を記録しましょう！',
+    calStatusLow: 'カロリー摂取量は目標の {pct}%（{total}/{goal} kcal）です。体力維持のため健康的な食事を増やしましょう。',
+    calStatusIdeal: '素晴らしい！カロリー摂取量は目標の {pct}%（{total}/{goal} kcal）で、理想的なバランスです。',
+    calStatusOver: '本日のカロリー摂取量は {pct}%（{total}/{goal} kcal）で目標を超過しています。軽い運動で調整しましょう。',
+    futureAdviceLabel: '今後のアドバイス:',
+    waterAdvice: '代謝をサポートするために1日コップ8杯以上の水分を摂取しましょう。',
+    proteinAdvice: '筋肉とスタミナのためにタンパク質（卵、鶏肉、豆腐など）を補給しましょう。',
+    balanceAdvice: 'バランスの取れた食事を維持し、十分な睡眠をとりましょう。',
+    calProgress: 'カロリー進捗', waterProgress: '水分進捗',
+    weeklySummaryTitle: '週刊まとめとアドバイス（過去7日間）',
+    avgCaloriesLabel: '平均カロリー', avgHydrationLabel: '平均水分',
+    weekEvalLow: '過去7日間の平均カロリー摂取量が安全基準を下回っています。',
+    weekTipLow: '来週のアドバイス: 朝食と昼食に複合炭水化物と良質なタンパク質を増やしましょう。',
+    weekEvalHigh: '週平均カロリーが目標値をやや上回っています。',
+    weekTipHigh: '来週のアドバイス: 夜食を控え、ウォーキングなどの軽い有酸素運動を行いましょう。',
+    weekEvalIdeal: '週平均カロリーは非常に理想的で体に合っています！',
+    weekTipIdeal: '来週のアドバイス: この栄養バランスを維持し、毎日2,000ml以上の水分を補給しましょう。',
+    monthlySummaryTitle: '月刊まとめとアドバイス（過去30日間）',
+    daysLoggedLabel: '記録日数', daysUnit: '日',
+    monthEvalHigh: 'とても規律正しく記録できています！過去30日中 {days} 日記録しました。',
+    monthEvalMed: '順調です！今月は {days} 日の食事記録があります。',
+    monthEvalLow: '今月は {days} 日の記録があります。毎日記録する習慣をつけましょう！',
+    monthTipLow: '来月のアドバイス: エネルギー切れを防ぐため1日3食を規則正しく摂りましょう。',
+    monthTipHigh: '来月のアドバイス: 緑黄色野菜や果物を増やしてバランスを整えましょう。',
+    monthTipIdeal: '来月のアドバイス: 月間栄養バランスは完璧です。この調子で続けましょう！',
+    healthTipTitle: '栄養アドバイス:',
+    tipHighFat: '脂質がやや高めです。水分を多めに摂り、フレッシュな緑黄色野菜と一緒に食べましょう。',
+    tipHighProtein: 'タンパク質が豊富です！筋肉の合成、スタミナ維持、満腹感の持続に効果的です。',
+    tipHighCarbs: 'エネルギー源となる炭水化物が豊富です。運動前後の栄養補給に最適です。',
+    tipBalanced: 'バランスの取れた栄養構成です！毎日の水分補給も忘れずに行いましょう。',
+    familySuggestions: 'ユニークな家族名の提案（タップして選択）:', selectCalendarDate: '日誌の日付を選択'
   },
   de: {
     appName: 'DailyCal', dash: 'Tagebuch', lead: 'Bestenliste', work: 'Trainingsplan', rec: 'Wochenmenü', anal: 'Familienanalytik', ask: 'KI Fragen', shop: 'Gesundheitsshop',
@@ -183,7 +315,40 @@ const uiDict: Record<string, Record<string, string>> = {
     editProfile: 'Profil bearbeiten', newProfile: 'Neues Profil', nickname: 'Spitzname', age: 'Alter (Jahre)', gender: 'Geschlecht', male: 'Männlich', female: 'Weiblich', weight: 'Gewicht (kg)', height: 'Größe (cm)', activityLevel: 'Aktivitätslevel', saveAndCalculate: 'Speichern & Berechnen',
     historyTitle: 'Verlauf', noHistory: 'Noch kein Verlauf vorhanden.', leaveTitle: 'Raum verlassen?', leaveDesc: 'Deine Daten werden nicht gelöscht, aber die Synchronisierung wird beendet.', yesLeave: 'Ja, verlassen',
     familyCodeTitle: 'Familiencode', familyCodeDesc: 'Erstelle oder gib deinen Familiencode ein, um zu synchronisieren.', syncBtn: 'Synchronisation starten', welcome: 'Willkommen!', roomCreated: 'Raum erfolgreich erstellt. Füge das erste Mitglied hinzu.', createProfile: 'Profil erstellen', addMember: 'Mitglied hinzufügen', members: 'Mitglieder', inDevelopment: 'Dieses Feature befindet sich in der Entwicklung.', backToJournal: 'Zurück zum Tagebuch',
-    aiGreeting: 'Hallo! Ich bin Jarvis, dein intelligenter KI-Gesundheitsassistent. Wie kann ich dir heute helfen?'
+    aiGreeting: 'Hallo! Ich bin Jarvis, dein intelligenter KI-Gesundheitsassistent. Wie kann ich dir heute helfen?',
+    prev: 'Zurück', next: 'Weiter', today: 'Heute', toToday: 'Zu Heute', journalDate: 'Tagebuchdatum:', filled: 'Erfasst',
+    dailySummaryTitle: 'Tägliche Zusammenfassung & Auswertung',
+    dailySummaryEmpty: 'Heute noch keine Mahlzeiten erfasst. Nutze die Kamera oder Galerie, um deine Mahlzeiten zu protokollieren!',
+    calStatusLow: 'Kalorienaufnahme liegt bei {pct}% des Tagesziels ({total}/{goal} kcal). Erhöhe gesunde Mahlzeiten für optimale Energie.',
+    calStatusIdeal: 'Sehr gut! Kalorienaufnahme erreicht {pct}% des Tagesziels ({total}/{goal} kcal). Deine Nährstoffbilanz ist im grünen Bereich.',
+    calStatusOver: 'Tägliche Kalorienaufnahme erreicht {pct}% ({total}/{goal} kcal) und liegt über dem Ziel. Gleiche es mit Spaziergängen aus.',
+    futureAdviceLabel: 'Zukünftige Empfehlung:',
+    waterAdvice: 'Trinke mindestens 8 Gläser Wasser täglich, um den Stoffwechsel zu unterstützen.',
+    proteinAdvice: 'Erhöhe die Proteinmenge (Eier, Hähnchen, Tofu), um Muskeln und Ausdauer zu stärken.',
+    balanceAdvice: 'Halte eine ausgewogene Ernährung aufrecht und achte auf ausreichend Schlaf.',
+    calProgress: 'Kalorienfortschritt', waterProgress: 'Wasserfortschritt',
+    weeklySummaryTitle: 'Wöchentliche Zusammenfassung & Tipps (Letzte 7 Tage)',
+    avgCaloriesLabel: 'Durchschn. Kalorien', avgHydrationLabel: 'Durchschn. Hydratation',
+    weekEvalLow: 'Durchschnittliche Kalorienzufuhr der letzten 7 Tage liegt unter dem sicheren Bereich.',
+    weekTipLow: 'Tipp für nächste Woche: Erhöhe komplexe Kohlenhydrate & gesundes Protein beim Frühstück und Mittagessen.',
+    weekEvalHigh: 'Wöchentliche Durchschnittskalorien liegen leicht über dem Tagesziel.',
+    weekTipHigh: 'Tipp für nächste Woche: Reduziere späte Snacks & mache mehr Spaziergänge oder leichtes Ausdauertraining.',
+    weekEvalIdeal: 'Deine wöchentlichen Durchschnittskalorien sind ideal und passen perfekt zu deinen Bedürfnissen!',
+    weekTipIdeal: 'Tipp für nächste Woche: Behalte dieses Ernährungs muster bei und trinke täglich mind. 2.000 ml Wasser.',
+    monthlySummaryTitle: 'Monatliche Zusammenfassung & Tipps (Letzte 30 Tage)',
+    daysLoggedLabel: 'Erfasste Tage', daysUnit: 'Tage',
+    monthEvalHigh: 'Sehr diszipliniert! Du hast an {days} der letzten 30 Tage dein Ernährungstagebuch geführt.',
+    monthEvalMed: 'Ziemlich regelmäßig! In diesem Monat wurden {days} Tage erfasst.',
+    monthEvalLow: 'In diesem Monat wurden {days} Tage erfasst. Lass uns deine tägliche Disziplin weiter steigern!',
+    monthTipLow: 'Strategischer Tipp: Achte auf 3 regelmäßige Hauptmahlzeiten täglich, um dein Energieniveau stabil zu halten.',
+    monthTipHigh: 'Strategischer Tipp: Gleiche Portionsgrößen durch mehr grünes Gemüse & frisches Obst aus.',
+    monthTipIdeal: 'Strategischer Tipp: Deine monatliche Nährstoffbilanz ist im perfekten grünen Bereich. Weiter so!',
+    healthTipTitle: 'Ernährungsberatung:',
+    tipHighFat: 'Diese Mahlzeit enthält relativ viel Fett. Trinke viel Wasser und kombiniere sie mit frischem Gemüse.',
+    tipHighProtein: 'Sehr proteinreich! Hervorragend für Muskelaufbau, Ausdauer und langanhaltende Sättigung.',
+    tipHighCarbs: 'Hoher Kohlenhydratgehalt als Energielieferant. Ideal vor oder nach aktiver Bewegung.',
+    tipBalanced: 'Ausgewogene Nährstoffverteilung! Achte auch auf deine tägliche Flüssigkeitszufuhr.',
+    familySuggestions: 'Einzigartige Familiennamen-Vorschläge (Zum Auswählen tippen):', selectCalendarDate: 'Tagebuchdatum auswählen'
   },
   fr: {
     appName: 'DailyCal', dash: 'Journal', lead: 'Classement', work: 'Programme', rec: 'Plan de Repas', anal: 'Analyse', ask: 'Demander à l\'IA', shop: 'Boutique Santé',
@@ -198,7 +363,40 @@ const uiDict: Record<string, Record<string, string>> = {
     editProfile: 'Modifier le profil', newProfile: 'Nouveau profil', nickname: 'Pseudo', age: 'Âge (Ans)', gender: 'Genre', male: 'Homme', female: 'Femme', weight: 'Poids (kg)', height: 'Taille (cm)', activityLevel: 'Niveau d\'activité', saveAndCalculate: 'Enregistrer & Calculer',
     historyTitle: 'Historique', noHistory: 'Aucun historique enregistré.', leaveTitle: 'Quitter la salle ?', leaveDesc: 'Vos données ne seront pas supprimées, mais la synchronisation s\'arrêtera.', yesLeave: 'Oui, quitter',
     familyCodeTitle: 'Code familial', familyCodeDesc: 'Créez ou saisissez votre code familial pour synchroniser.', syncBtn: 'Démarrer la synchro', welcome: 'Bienvenue !', roomCreated: 'Salle créée avec succès. Ajoutez le premier membre.', createProfile: 'Créer votre profil', addMember: 'Ajouter un membre', members: 'Membres', inDevelopment: 'Cette fonctionnalité est en cours de développement.', backToJournal: 'Retour au journal',
-    aiGreeting: 'Bonjour ! Je suis Jarvis, votre assistant santé IA intelligent. Comment puis-je vous aider aujourd\'hui ?'
+    aiGreeting: 'Bonjour ! Je suis Jarvis, votre assistant santé IA intelligent. Comment puis-je vous aider aujourd\'hui ?',
+    prev: 'Précédent', next: 'Suivant', today: 'Aujourd\'hui', toToday: 'Aller à aujourd\'hui', journalDate: 'Date du journal :', filled: 'Enregistré',
+    dailySummaryTitle: 'Résumé & Évaluation Quotidienne',
+    dailySummaryEmpty: 'Aucun repas enregistré aujourd\'hui. Utilisez l\'appareil photo ou la galerie pour ajouter votre repas !',
+    calStatusLow: 'Apport calorique atteint à {pct}% de l\'objectif ({total}/{goal} kcal). Augmentez les aliments sains pour maintenir votre énergie.',
+    calStatusIdeal: 'Bravo ! Apport calorique atteint à {pct}% de l\'objectif ({total}/{goal} kcal). Votre équilibre nutritionnel est idéal.',
+    calStatusOver: 'L\'apport calorique atteint {pct}% ({total}/{goal} kcal), dépassant l\'objectif. Équilibrez avec de la marche ou du sport léger.',
+    futureAdviceLabel: 'Conseil pour la suite :',
+    waterAdvice: 'Buvez au moins 8 verres d\'eau par jour pour soutenir votre métabolisme.',
+    proteinAdvice: 'Ajoutez des protéines (œufs, poulet, tofu) pour renforcer vos muscles et votre endurance.',
+    balanceAdvice: 'Conservez des portions équilibrées et veillez à avoir un bon sommeil réparateur.',
+    calProgress: 'Progrès Calories', waterProgress: 'Progrès Hydratation',
+    weeklySummaryTitle: 'Résumé & Conseils Hebdomadaires (7 derniers jours)',
+    avgCaloriesLabel: 'Calories Moyennes', avgHydrationLabel: 'Hydratation Moyenne',
+    weekEvalLow: 'L\'apport calorique moyen des 7 derniers jours est inférieur au seuil recommandé.',
+    weekTipLow: 'Conseil semaine prochaine : Augmentez les glucides complexes & protéines saines au petit-déjeuner et déjeuner.',
+    weekEvalHigh: 'La moyenne calorique hebdomadaire dépasse légèrement l\'objectif quotidien.',
+    weekTipHigh: 'Conseil semaine prochaine : Réduisez les grignotages du soir & marchez davantage.',
+    weekEvalIdeal: 'Vos calories hebdomadaires moyennes sont idéales et adaptées à vos besoins !',
+    weekTipIdeal: 'Conseil semaine prochaine : Conservez ce rythme nutritionnel et buvez au moins 2 000 ml d\'eau par jour.',
+    monthlySummaryTitle: 'Résumé & Conseils Mensuels (30 derniers jours)',
+    daysLoggedLabel: 'Jours Enregistrés', daysUnit: 'Jours',
+    monthEvalHigh: 'Très discipliné ! Vous avez rempli votre journal {days} jours sur les 30 derniers jours.',
+    monthEvalMed: 'Plutôt régulier ! {days} jours enregistrés ce mois-ci.',
+    monthEvalLow: '{days} jours enregistrés ce mois-ci. Renforçons votre régularité quotidienne !',
+    monthTipLow: 'Conseil mois prochain : Conservez 3 repas principaux réguliers par jour pour stabiliser votre énergie.',
+    monthTipHigh: 'Conseil mois prochain : Équilibrez vos repas en augmentant la part de légumes verts & fruits frais.',
+    monthTipIdeal: 'Conseil mois prochain : Équilibre nutritionnel parfait ce mois-ci. Poursuivez ainsi !',
+    healthTipTitle: 'Conseil Santé Nutrition :',
+    tipHighFat: 'Plat assez riche en lipides. Buvez beaucoup d\'eau et accompagnez de légumes verts frais.',
+    tipHighProtein: 'Trés riche en protéines ! Excellent pour le développement musculaire et la satiété.',
+    tipHighCarbs: 'Apport élevé en glucides pour l\'énergie. Idéal avant ou après une activité physique.',
+    tipBalanced: 'Repas bien équilibré ! N\'oubliez pas de maintenir votre hydratation quotidienne.',
+    familySuggestions: 'Suggestions de noms de famille uniques (Appuyez pour choisir) :', selectCalendarDate: 'Sélectionner la date du journal'
   },
   hi: {
     appName: 'DailyCal', dash: 'दैनिक पत्रिका', lead: 'लीडरबोर्ड', work: 'कसरत', rec: 'भोजन योजना', anal: 'परिवार एनालिटिक्स', ask: 'AI से पूछें', shop: 'स्वस्थ स्टोर',
@@ -213,7 +411,40 @@ const uiDict: Record<string, Record<string, string>> = {
     editProfile: 'प्रोफ़ाइल संपादित करें', newProfile: 'नई प्रोफ़ाइल', nickname: 'उपनाम', age: 'उम्र (वर्ष)', gender: 'लिंग', male: 'पुरुष', female: 'महिला', weight: 'वजन (किग्रा)', height: 'लंबाई (सेमी)', activityLevel: 'गतिविधि का स्तर', saveAndCalculate: 'सहेजें और लक्ष्य की गणना करें',
     historyTitle: 'इतिहास', noHistory: 'कोई इतिहास नहीं।', leaveTitle: 'कमरा छोड़ें?', leaveDesc: 'आपका डेटा हटाया नहीं जाएगा, लेकिन सिंक बंद हो जाएगा।', yesLeave: 'हाँ, छोड़ें',
     familyCodeTitle: 'पारिवारिक कोड', familyCodeDesc: 'सिंक करने के लिए अपना परिवार कोड बनाएं या दर्ज करें।', syncBtn: 'सिंक शुरू करें', welcome: 'स्वागत है!', roomCreated: 'कमरा बन गया। पहला सदस्य जोड़ें।', createProfile: 'अपनी प्रोफ़ाइल बनाएं', addMember: 'सदस्य जोड़ें', members: 'सदस्य', inDevelopment: 'यह सुविधा विकास के तहत है।', backToJournal: 'पत्रिका पर वापस',
-    aiGreeting: 'नमस्ते! मैं जार्विस हूँ, आपका AI स्वास्थ्य सहायक। आज मैं आपकी कैसे मदद कर सकता हूँ?'
+    aiGreeting: 'नमस्ते! मैं जार्विस हूँ, आपका AI स्वास्थ्य सहायक। आज मैं आपकी कैसे मदद कर सकता हूँ?',
+    prev: 'पिछला', next: 'अगला', today: 'आज', toToday: 'आज पर जाएं', journalDate: 'पत्रिका तिथि:', filled: 'दर्ज',
+    dailySummaryTitle: 'दैनिक पोषण सारांश और मूल्यांकन',
+    dailySummaryEmpty: 'आज के लिए कोई भोजन रिकॉर्ड नहीं है। अपने भोजन को रिकॉर्ड करने के लिए कैमरा या गैलरी का उपयोग करें!',
+    calStatusLow: 'कैलोरी का सेवन दैनिक लक्ष्य का {pct}% ({total}/{goal} kcal) पहुंचा है। ऊर्जा बनाए रखने के लिए स्वस्थ भोजन बढ़ाएं।',
+    calStatusIdeal: 'बहुत बढ़िया! कैलोरी का सेवन दैनिक लक्ष्य का {pct}% ({total}/{goal} kcal) पहुंचा है। आपका पोषण संतुलन आदर्श है।',
+    calStatusOver: 'आज का कैलोरी सेवन {pct}% ({total}/{goal} kcal) पहुंचा है, जो लक्ष्य से अधिक है। हल्की सैर से संतुलित करें।',
+    futureAdviceLabel: 'भविष्य की सलाह:',
+    waterAdvice: 'मेटाबॉलिज्म में सुधार के लिए रोजाना कम से कम 8 गिलास पानी पिएं।',
+    proteinAdvice: 'मांसपेशियों और स्टैमिना के लिए प्रोटीन (अंडे, चिकन, पनीर) की मात्रा बढ़ाएं।',
+    balanceAdvice: 'संतुलित पोषण बनाए रखें और रात में पर्याप्त नींद लें।',
+    calProgress: 'कैलोरी प्रगति', waterProgress: 'जल प्रगति',
+    weeklySummaryTitle: 'साप्ताहिक सारांश और सलाह (पिछले 7 दिन)',
+    avgCaloriesLabel: 'औसत कैलोरी', avgHydrationLabel: 'औसत जलयोजन',
+    weekEvalLow: 'पिछले 7 दिनों में औसत कैलोरी का सेवन सुरक्षित सीमा से कम है।',
+    weekTipLow: 'अगले सप्ताह की सलाह: नाश्ते और दोपहर के भोजन में प्रोटीन और कॉम्प्लेक्स कार्ब्स बढ़ाएं।',
+    weekEvalHigh: 'साप्ताहिक औसत कैलोरी दैनिक लक्ष्य सीमा से थोड़ी अधिक है।',
+    weekTipHigh: 'अगले सप्ताह की सलाह: देर रात के स्नैक्स कम करें और चलने की अवधि बढ़ाएं।',
+    weekEvalIdeal: 'आपकी साप्ताहिक औसत कैलोरी बिल्कुल आदर्श और शरीर की जरूरतों के अनुकूल है!',
+    weekTipIdeal: 'अगले सप्ताह की सलाह: इस पोषण पैटर्न को बनाए रखें और रोजाना कम से कम 2,000 मिलीलीटर पानी पिएं।',
+    monthlySummaryTitle: 'मासिक सारांश और सलाह (पिछले 30 दिन)',
+    daysLoggedLabel: 'दर्ज दिन', daysUnit: 'दिन',
+    monthEvalHigh: 'बहुत अनुशासित! आपने पिछले 30 में से {days} दिनों का पोषण रिकॉर्ड दर्ज किया है।',
+    monthEvalMed: 'काफी नियमित! इस महीने {days} दिन का रिकॉर्ड दर्ज किया गया है।',
+    monthEvalLow: 'इस महीने {days} दिन का रिकॉर्ड दर्ज है। आइए दैनिक निरंतरता बढ़ाएं!',
+    monthTipLow: 'अगले महीने की सलाह: ऊर्जा बनाए रखने के लिए रोजाना 3 मुख्य भोजन समय पर लें।',
+    monthTipHigh: 'अगले महीने की सलाह: हरी सब्जियों और ताजे फलों को बढ़ाकर भोजन का संतुलन बनाएं।',
+    monthTipIdeal: 'अगले महीने की सलाह: मासिक पोषण संतुलन पूर्ण हरे क्षेत्र में है। इसे बनाए रखें!',
+    healthTipTitle: 'पोषण स्वास्थ्य सलाह:',
+    tipHighFat: 'इस भोजन में वसा अधिक है। प्रचुर मात्रा में पानी पिएं और हरी सब्जियां चुनें।',
+    tipHighProtein: 'प्रोटीन से भरपूर! मांसपेशियों के निर्माण और स्टैमिना के लिए बहुत अच्छा।',
+    tipHighCarbs: 'ऊर्जा के लिए उच्च कार्ब्स। शारीरिक गतिविधि से पहले या बाद में उपयुक्त।',
+    tipBalanced: 'संतुलित पोषण! सुनिश्चित करें कि आपकी दैनिक पानी की आवश्यकता पूरी हो।',
+    familySuggestions: 'अनोखे परिवार के नाम का सुझाव (चुनने के लिए टैप करें):', selectCalendarDate: 'पत्रिका की तारीख चुनें'
   },
   ko: {
     appName: 'DailyCal', dash: '일일 저널', lead: '리더보드', work: '운동', rec: '주간 식단', anal: '가족 분석', ask: 'AI에게 묻기', shop: '건강 스토어',
@@ -228,22 +459,88 @@ const uiDict: Record<string, Record<string, string>> = {
     editProfile: '프로필 편집', newProfile: '새 프로필', nickname: '닉네임', age: '나이 (세)', gender: '성별', male: '남성', female: '여성', weight: '체중 (kg)', height: '키 (cm)', activityLevel: '활동량', saveAndCalculate: '저장 및 목표 계산',
     historyTitle: '기록', noHistory: '기록이 없습니다.', leaveTitle: '방을 나가시겠습니까?', leaveDesc: '데이터는 삭제되지 않지만 동기화가 중단됩니다.', yesLeave: '예, 나가기',
     familyCodeTitle: '가족 코드', familyCodeDesc: '장치 간 동기화를 위해 가족 코드를 생성하거나 입력하세요.', syncBtn: '동기화 시작', welcome: '환영합니다!', roomCreated: '방이 생성되었습니다. 첫 번째 구성원을 추가하세요.', createProfile: '프로필 생성', addMember: '구성원 추가', members: '구성원', inDevelopment: '이 기능은 개발 중입니다.', backToJournal: '저널로 돌아가기',
-    aiGreeting: '안녕하세요! Smart AI 건강 도우미 Jarvis입니다. 오늘 어떤 도움이 필요하신가요?'
+    aiGreeting: '안녕하세요! Smart AI 건강 도우미 Jarvis입니다. 오늘 어떤 도움이 필요하신가요?',
+    prev: '이전', next: '다음', today: '오늘', toToday: '오늘로', journalDate: '저널 날짜:', filled: '기록됨',
+    dailySummaryTitle: '일일 영양 요약 및 평가',
+    dailySummaryEmpty: '오늘의 식사 기록이 아직 없습니다. 카메라나 갤러리를 사용해 식사를 기록해보세요!',
+    calStatusLow: '칼로리 섭취량이 목표의 {pct}% ({total}/{goal} kcal)입니다. 체력 유지를 위해 건강한 식사를 늘려보세요.',
+    calStatusIdeal: '훌륭합니다! 칼로리 섭취량이 목표의 {pct}% ({total}/{goal} kcal)로 이상적인 녹색 지대입니다.',
+    calStatusOver: '오늘 칼로리 섭취량이 {pct}% ({total}/{goal} kcal)로 목표를 초과했습니다. 가벼운 산책으로 조절해보세요.',
+    futureAdviceLabel: '향후 조언:',
+    waterAdvice: '신진대사를 위해 하루 최소 8잔 이상의 물을 마셔주세요.',
+    proteinAdvice: '근육과 체력을 위해 단백질(계란, 닭고기, 두부)을 추가해보세요.',
+    balanceAdvice: '균형 잡힌 영양 비율을 유지하고 충분한 숙면을 취하세요.',
+    calProgress: '칼로리 진행률', waterProgress: '수분 진행률',
+    weeklySummaryTitle: '주간 요약 및 조언 (지난 7일)',
+    avgCaloriesLabel: '평균 칼로리', avgHydrationLabel: '평균 수분',
+    weekEvalLow: '지난 7일간의 평균 칼로리 섭취량이 기준치 미만입니다.',
+    weekTipLow: '다음 주 조언: 아침과 점심에 복합 탄수화물과 건강한 단백질 섭취를 늘려보세요.',
+    weekEvalHigh: '주간 평균 칼로리가 일일 목표치를 살짝 초과했습니다.',
+    weekTipHigh: '다음 주 조언: 야식을 줄이고 유산소 운동이나 산책 시간을 늘려보세요.',
+    weekEvalIdeal: '주간 평균 칼로리가 매우 이상적이며 몸에 잘 맞습니다!',
+    weekTipIdeal: '다음 주 조언: 현재의 영양 패턴을 유지하고 하루 2,000ml 이상 물을 마셔주세요.',
+    monthlySummaryTitle: '월간 요약 및 조언 (지난 30일)',
+    daysLoggedLabel: '기록된 날짜', daysUnit: '일',
+    monthEvalHigh: '아주 철저합니다! 지난 30일 중 {days}일 동안 식단을 기록했습니다.',
+    monthEvalMed: '매우 꾸준합니다! 이번 달 {days}일 동안 식단을 기록했습니다.',
+    monthEvalLow: '이번 달 {days}일 동안 식단을 기록했습니다. 꾸준함을 유지해보세요!',
+    monthTipLow: '다음 달 전략: 에너지가 떨어지지 않도록 하루 3끼 식사를 규칙적으로 하세요.',
+    monthTipHigh: '다음 달 전략: 녹색 채소와 신선한 과일 비율을 늘려 균형을 맞추세요.',
+    monthTipIdeal: '다음 달 전략: 월간 영양 균형이 완벽합니다. 이대로 유지하세요!',
+    healthTipTitle: '건강 및 영양 조언:',
+    tipHighFat: '지방 함량이 높은 편입니다. 물을 많이 마시고 신선한 녹색 채소를 곁들여보세요.',
+    tipHighProtein: '단백질이 매우 풍부합니다! 근육 합성 및 지구력, 포만감 유지에 좋습니다.',
+    tipHighCarbs: '에너지를 위한 탄수화물 함량이 높습니다. 활동 전후 섭취에 좋습니다.',
+    tipBalanced: '균형 잡힌 영양소! 하루 수분 섭취량을 꼭 채워주세요.',
+    familySuggestions: '고유 가족 이름 추천 (선택하려면 탭하세요):', selectCalendarDate: '저널 날짜 선택'
   },
   pt: {
-    appName: 'DailyCal', dash: 'Diário', lead: 'Classificação', work: 'Treino', rec: 'Plano de Refeições', anal: 'Análise', ask: 'Perguntar à IA', shop: 'Loja Saudável',
+    appName: 'DailyCal', dash: 'Diário', lead: 'Classificação', work: 'Treino', rec: 'Plano Alimentar', anal: 'Análise', ask: 'Perguntar à IA', shop: 'Loja Saudável',
     room: 'Sala', soon: 'Em breve', viewHistory: 'Ver Histórico', switchUser: 'Alternar Membro', leaveRoom: 'Sair da Sala', donate: 'Doar',
     dailyCalFor: 'Calorias Diárias de', target: 'Meta', pro: 'Prot', carbs: 'Carb', fat: 'Gordura', waterIntake: 'Consumo de Água', undo: 'Desfazer',
     foodJournalToday: 'Diário Alimentar (Hoje)', noIntakeRecorded: 'Nenhum registro para', kcal: 'kcal',
-    waterKing: 'Líder de Água', calorieWarrior: 'Líder de Calorias', inviteFamily: 'Convidar Família!', inviteDesc: 'A classificação é mais divertida em família. Adicione membros para competir com saúde.', you: 'Você',
-    workoutSubtitle: 'Mantenha-se ativo e em forma em casa.', workoutPowered: 'Powered by Darebee', workoutInfo: 'Treinos do acervo público do darebee.com. Toque na imagem para ver o pôster.', openFull: 'Abrir Total',
-    recipesSubtitle: 'Plano alimentar saudável, prático e nutritivo.', tapRecipeTip: '💡 Toque no prato para ver a receita', breakfast: 'Café da manhã', lunch: 'Almoço', dinner: 'Jantar', ingredients: 'Ingredientes', instructions: 'Instruções',
-    analyticsSubtitle: 'Acompanhe o progresso de saúde em conjunto.', calFulfillment: 'Metas de Calorias (Hoje)', waterFulfillment: 'Consumo de Água (Hoje)', askAiPlaceholder: 'Pergunte sobre calorias, receitas ou treinos...',
-    addFoodFor: 'Adicionar refeição para', camera: 'Câmera', gallery: 'Galeria', cancelBtn: 'Cancelar', foodAnalysis: 'Análise Alimentar', scanning: 'Escaneando Nutrientes...', totalCalories: 'Calorias Totais', saveFor: 'Salvar para',
-    editProfile: 'Editar Perfil', newProfile: 'Novo Perfil', nickname: 'Apelido', age: 'Idade (Anos)', gender: 'Gênero', male: 'Masculino', female: 'Feminino', weight: 'Peso (kg)', height: 'Altura (cm)', activityLevel: 'Nível de Atividade', saveAndCalculate: 'Salvar e Calcular Meta',
-    historyTitle: 'Histórico', noHistory: 'Nenhum histórico registrado.', leaveTitle: 'Sair da Sala?', leaveDesc: 'Seus dados não serão excluídos, mas a sincronização será encerrada.', yesLeave: 'Sim, Sair',
-    familyCodeTitle: 'Código de Família', familyCodeDesc: 'Crie ou insira seu código familiar para sincronizar.', syncBtn: 'Iniciar Sincronização', welcome: 'Bem-vindo!', roomCreated: 'Sala criada com sucesso. Adicione o primeiro membro.', createProfile: 'Criar Seu Perfil', addMember: 'Adicionar Membro', members: 'Membros', inDevelopment: 'Este recurso está em desenvolvimento.', backToJournal: 'Voltar ao Diário',
-    aiGreeting: 'Olá! Sou Jarvis, seu assistente inteligente de saúde com IA. Como posso ajudar você hoje?'
+    waterKing: 'Líder de Água', calorieWarrior: 'Líder de Calorias', inviteFamily: '¡Convidar Família!', inviteDesc: 'A classificação é divertida em família. Adicione membros para competir com saúde.', you: 'Você',
+    workoutSubtitle: 'Mantenha-se ativo e em forma em casa.', workoutPowered: 'Powered by Darebee', workoutInfo: 'Treinos do catálogo público do darebee.com. Toque na imagem para ver o pôster.', openFull: 'Abrir Completo',
+    recipesSubtitle: 'Plano alimentar saudável, prático e nutritivo.', tapRecipeTip: '💡 Toque no nome do prato para ver a receita', breakfast: 'Café da Manhã', lunch: 'Almoço', dinner: 'Jantar', ingredients: 'Ingredientes', instructions: 'Instruções',
+    analyticsSubtitle: 'Monitore as conquistas de saúde juntos.', calFulfillment: 'Meta de Calorias (Hoje)', waterFulfillment: 'Consumo de Água (Hoje)', askAiPlaceholder: 'Pergunte sobre calorias, receitas ou treinos...',
+    addFoodFor: 'Adicionar comida para', camera: 'Câmera', gallery: 'Galeria', cancelBtn: 'Cancelar', foodAnalysis: 'Análise de Comida', scanning: 'Escaneando Nutrição...', totalCalories: 'Calorias Totais', saveFor: 'Salvar para',
+    editProfile: 'Editar Perfil', newProfile: 'Novo Perfil', nickname: 'Apelido', age: 'Idade (Anos)', gender: 'Gênero', male: 'Homem', female: 'Mulher', weight: 'Peso (kg)', height: 'Altura (cm)', activityLevel: 'Nível de Atividade', saveAndCalculate: 'Salvar e Calcular Meta',
+    historyTitle: 'Histórico', noHistory: 'Nenhum histórico registrado.', leaveTitle: 'Sair da Sala?', leaveDesc: 'Seus dados não serão excluídos, mas a sincronização terminará.', yesLeave: 'Sim, Sair',
+    familyCodeTitle: 'Código Familiar', familyCodeDesc: 'Crie ou insira seu código familiar para sincronizar.', syncBtn: 'Iniciar Sincronização', welcome: 'Bem-vindo!', roomCreated: 'Sala criada com sucesso. Adicione o primeiro membro.', createProfile: 'Criar Seu Perfil', addMember: 'Adicionar Membro', members: 'Membros', inDevelopment: 'Esta funcionalidade está em desenvolvimento.', backToJournal: 'Voltar ao Diário',
+    aiGreeting: 'Olá! Sou Jarvis, seu assistente de saúde inteligente com IA. Como posso ajudar hoje?',
+    prev: 'Anterior', next: 'Próximo', today: 'Hoje', toToday: 'Ir para Hoje', journalDate: 'Data do Diário:', filled: 'Registrado',
+    dailySummaryTitle: 'Resumo e Avaliação Nutricional Diária',
+    dailySummaryEmpty: 'Nenhum registro alimentar para hoje. Use a câmera ou galeria para registrar suas refeições!',
+    calStatusLow: 'A quantidade de calorias atingiu {pct}% da meta ({total}/{goal} kcal). Aumente a ingestão de refeições saudáveis.',
+    calStatusIdeal: 'Muito bom! Calorias atingiram {pct}% da meta ({total}/{goal} kcal). Seu equilíbrio está na zona verde ideal.',
+    calStatusOver: 'As calorias de hoje atingiram {pct}% ({total}/{goal} kcal), excedendo a meta. Equilibre com uma caminhada leve.',
+    futureAdviceLabel: 'Conselhos Futuros:',
+    waterAdvice: 'Beba pelo menos 8 copos de água por dia para apoiar o metabolismo.',
+    proteinAdvice: 'Adicione proteínas (ovos, frango, tofu) para apoiar os músculos e estamina.',
+    balanceAdvice: 'Mantenha a proporção de nutrientes equilibrada e durma bem à noite.',
+    calProgress: 'Progresso de Calorias', waterProgress: 'Progresso de Água',
+    weeklySummaryTitle: 'Resumo e Conselho Semanal (Últimos 7 Dias)',
+    avgCaloriesLabel: 'Média de Calorias', avgHydrationLabel: 'Média de Hidratação',
+    weekEvalLow: 'A média de calorias dos últimos 7 dias está abaixo da meta.',
+    weekTipLow: 'Dica Próxima Semana: Aumente carboidratos complexos e proteínas saudáveis no café e almoço.',
+        weekEvalHigh: 'A média semanal de calorias excede ligeiramente a meta diária.',
+    weekTipHigh: 'Dica Próxima Semana: Reduza lanches noturnos e aumente a caminhada.',
+    weekEvalIdeal: 'Sua média semanal de calorias é ideal e atende perfeitamente ao seu corpo!',
+    weekTipIdeal: 'Dica Próxima Semana: Mantenha este padrão nutricional e beba pelo menos 2.000 ml de água diariamente.',
+    monthlySummaryTitle: 'Resumo e Conselho Mensal (Últimos 30 Dias)',
+    daysLoggedLabel: 'Dias Registrados', daysUnit: 'Dias',
+    monthEvalHigh: 'Muito disciplinado! Você registrou o diário em {days} dos últimos 30 dias.',
+    monthEvalMed: 'Bastante regular! Registrados {days} dias de diário este mês.',
+    monthEvalLow: 'Registrados {days} dias este mês. Vamos aumentar sua consistência diária!',
+    monthTipLow: 'Conselho Mês Que Vem: Mantenha 3 refeições principais regulares para não esgotar sua energia.',
+    monthTipHigh: 'Conselho Mês Que Vem: Equilibre as refeições aumentando vegetais folhosos e frutas.',
+    monthTipIdeal: 'Conselho Mês Que Vem: Equilíbrio nutricional mensal na zona verde perfeita. Continue assim!',
+    healthTipTitle: 'Conselho de Saúde e Nutrição:',
+    tipHighFat: 'Alimento com alto teor de gordura. Beba bastante água e acompanhe com vegetais frescos.',
+    tipHighProtein: 'Muito rico em proteínas! Ótimo para massa muscular, estamina e saciedade prolongada.',
+    tipHighCarbs: 'Alto teor de carboidratos para energia. Ideal antes ou depois de atividades físicas.',
+    tipBalanced: 'Refeição equilibrada! Lembre-se de manter a hidratação diária.',
+    familySuggestions: 'Sugestões de Nomes de Família Únicos (Toque para selecionar):', selectCalendarDate: 'Selecionar Data do Diário'
   },
   es: {
     appName: 'DailyCal', dash: 'Diario', lead: 'Clasificación', work: 'Entrenamiento', rec: 'Plan de Comidas', anal: 'Análisis', ask: 'Preguntar a la IA', shop: 'Tienda Saludable',
@@ -258,7 +555,40 @@ const uiDict: Record<string, Record<string, string>> = {
     editProfile: 'Editar Perfil', newProfile: 'Nuevo Perfil', nickname: 'Apodo', age: 'Edad (Años)', gender: 'Género', male: 'Hombre', female: 'Mujer', weight: 'Peso (kg)', height: 'Altura (cm)', activityLevel: 'Nivel de Actividad', saveAndCalculate: 'Guardar y Calcular Meta',
     historyTitle: 'Historial', noHistory: 'No hay historial registrado.', leaveTitle: '¿Salir de la Sala?', leaveDesc: 'Tus datos no se eliminarán, pero la sincronización finalizará.', yesLeave: 'Sí, Salir',
     familyCodeTitle: 'Código Familiar', familyCodeDesc: 'Crea o ingresa tu código familiar para sincronizar.', syncBtn: 'Iniciar Sincronización', welcome: '¡Bienvenido!', roomCreated: 'Sala creada con éxito. Añade al primer miembro.', createProfile: 'Crear Tu Perfil', addMember: 'Añadir Miembro', members: 'Miembros', inDevelopment: 'Esta función está en desarrollo.', backToJournal: 'Volver al Diario',
-    aiGreeting: '¡Hola! Soy Jarvis, tu asistente de salud inteligente con IA. ¿En qué puedo ayudarte hoy?'
+    aiGreeting: '¡Hola! Soy Jarvis, tu asistente de salud inteligente con IA. ¿En qué puedo ayudarte hoy?',
+    prev: 'Anterior', next: 'Siguiente', today: 'Hoy', toToday: 'Ir a Hoy', journalDate: 'Fecha del Diario:', filled: 'Registrado',
+    dailySummaryTitle: 'Resumen y Evaluación Nutricional Diaria',
+    dailySummaryEmpty: '¡Aún no hay registros de comida para hoy. Usa la cámara o la galería para registrar tus comidas!',
+    calStatusLow: 'El consumo de calorías alcanzó el {pct}% de la meta diaria ({total}/{goal} kcal). Aumenta alimentos saludables para óptima energía.',
+    calStatusIdeal: '¡Excelente! El consumo de calorías alcanzó el {pct}% de la meta diaria ({total}/{goal} kcal). Tu balance nutricional es ideal.',
+    calStatusOver: 'El consumo de calorías de hoy alcanzó el {pct}% ({total}/{goal} kcal), superando la meta. Equilibra con una caminata suave.',
+    futureAdviceLabel: 'Consejo Futuro:',
+    waterAdvice: 'Bebe al menos 8 vasos de agua al día para apoyar el metabolismo.',
+    proteinAdvice: 'Añade porciones de proteína (huevos, pollo, tofu) para mantener tus músculos y energía.',
+    balanceAdvice: 'Mantén porciones de nutrición equilibradas y descansa lo suficiente por la noche.',
+    calProgress: 'Progreso de Calorías', waterProgress: 'Progreso de Agua',
+    weeklySummaryTitle: 'Resumen y Consejo Semanal (Últimos 7 Días)',
+    avgCaloriesLabel: 'Calorías Promedio', avgHydrationLabel: 'Hidratación Promedio',
+    weekEvalLow: 'El promedio de calorías de los últimos 7 días está por debajo del límite seguro.',
+    weekTipLow: 'Consejo Próxima Semana: Aumenta carbohidratos complejos y proteína saludable en desayuno y almuerzo.',
+    weekEvalHigh: 'El promedio semanal de calorías supera ligeramente la meta diaria.',
+    weekTipHigh: 'Consejo Próxima Semana: Reduce bocadillos nocturnos y camina un poco más.',
+    weekEvalIdeal: '¡Tu promedio semanal de calorías es ideal y se adapta a tu cuerpo!',
+    weekTipIdeal: 'Consejo Próxima Semana: Mantén este patrón de nutrición y bebe al menos 2,000 ml de agua al día.',
+    monthlySummaryTitle: 'Resumen y Consejo Mensual (Últimos 30 Días)',
+    daysLoggedLabel: 'Días Registrados', daysUnit: 'Días',
+    monthEvalHigh: '¡Muy disciplinado! Registraste tu diario en {days} de los últimos 30 días.',
+    monthEvalMed: '¡Bastante constante! Se registraron {days} días de diario este mes.',
+    monthEvalLow: 'Se registraron {days} días este mes. ¡Fomentemos tu constancia diaria!',
+    monthTipLow: 'Consejo Próximo Mes: Mantén 3 comidas principales regulares al día para mantener tu energía estable.',
+    monthTipHigh: 'Consejo Próximo Mes: Equilibra porciones aumentando verduras de hoja verde y frutas frescas.',
+    monthTipIdeal: 'Consejo Próximo Mes: El balance nutricional mensual está en la zona verde perfecta. ¡Sigue así!',
+    healthTipTitle: 'Consejo de Salud y Nutrición:',
+    tipHighFat: 'Alimento con grasa elevada. Bebe abundante agua y acompaña con verduras frescas.',
+    tipHighProtein: '¡Muy rico en proteínas! Excelente para masa muscular, resistencia y saciedad prolongada.',
+    tipHighCarbs: 'Alto en carbohidratos para energía. Ideal antes o después de hacer ejercicio.',
+    tipBalanced: '¡Porción de nutrición equilibrada! Asegúrate de cumplir con tu hidratación diaria.',
+    familySuggestions: 'Sugerencias de Nombres Familiares Únicos (Toca para seleccionar):', selectCalendarDate: 'Seleccionar Fecha del Diario'
   }
 };
 
@@ -394,15 +724,15 @@ export default function App() {
   const getHealthTip = (name: string, cal: number, pro: number, carb: number, fat: number, customTip?: string) => {
     if (customTip && customTip.trim()) return customTip;
     if (fat > 20) {
-      return "Makanan ini cukup tinggi lemak. Imbangi dengan perbanyak minum air putih dan pilih sayuran hijau segar.";
+      return t('tipHighFat', language);
     }
     if (pro >= 18) {
-      return "Sangat kaya protein! Bagus untuk pembentukan jaringan otot, stamina harian, dan menjaga rasa kenyang lebih lama.";
+      return t('tipHighProtein', language);
     }
     if (carb >= 45) {
-      return "Asupan karbohidrat tinggi sebagai bahan bakar energi. Cocok dikonsumsi sebelum atau sesudah beraktivitas aktif.";
+      return t('tipHighCarbs', language);
     }
-    return "Porsi nutrisi seimbang! Pastikan pemenuhan kebutuhan hidrasi air putih harian Anda terpenuhi.";
+    return t('tipBalanced', language);
   };
 
   // Name Suggestions Generator for Room Code
@@ -649,18 +979,18 @@ export default function App() {
     let suggestion = "";
 
     if (avgCals < calGoal * 0.7) {
-      evaluation = "Rata-rata asupan kalori 7 hari terakhir tergolong di bawah batas aman.";
-      suggestion = "Saran Minggu Depan: Tingkatkan porsi karbohidrat kompleks & protein sehat saat sarapan dan makan siang.";
+      evaluation = t('weekEvalLow', language);
+      suggestion = t('weekTipLow', language);
     } else if (avgCals > calGoal * 1.25) {
-      evaluation = "Rata-rata kalori mingguan sedikit melampaui batas target harian.";
-      suggestion = "Saran Minggu Depan: Kurangi camilan malam & tingkatkan durasi jalan kaki / latihan kardio ringan.";
+      evaluation = t('weekEvalHigh', language);
+      suggestion = t('weekTipHigh', language);
     } else {
-      evaluation = "Rata-rata kalori mingguan Anda sangat ideal dan sesuai dengan kebutuhan tubuh!";
-      suggestion = "Saran Minggu Depan: Pertahankan pola nutrisi ini dan pastikan minum air putih minimal 2.000 ml setiap hari.";
+      evaluation = t('weekEvalIdeal', language);
+      suggestion = t('weekTipIdeal', language);
     }
 
     return { totalCals, avgCals, daysLogged, avgWater, evaluation, suggestion };
-  }, [activeFoodLogs, activeWaterLogs, activeProfile, activeProfileId]);
+  }, [activeFoodLogs, activeWaterLogs, activeProfile, activeProfileId, language]);
 
   const monthlySummary = useMemo(() => {
     if (!activeProfileId) return null;
@@ -686,23 +1016,23 @@ export default function App() {
     let suggestion = "";
 
     if (daysLogged >= 20) {
-      evaluation = `Sangat Disiplin! Anda aktif mencatatkan jurnal nutrisi selama ${daysLogged} dari 30 hari terakhir.`;
+      evaluation = t('monthEvalHigh', language).replace('{days}', daysLogged.toString());
     } else if (daysLogged >= 10) {
-      evaluation = `Cukup Teratur! Tercatat ${daysLogged} hari jurnal nutrisi terisi bulan ini.`;
+      evaluation = t('monthEvalMed', language).replace('{days}', daysLogged.toString());
     } else {
-      evaluation = `Tercatat ${daysLogged} hari jurnal terisi bulan ini. Mari dorong konsistensi harian Anda.`;
+      evaluation = t('monthEvalLow', language).replace('{days}', daysLogged.toString());
     }
 
     if (avgCals < calGoal * 0.8) {
-      suggestion = "Saran Strategis Bulan Depan: Perhatikan konsistensi makan utama 3 kali sehari agar energi tidak cepat habis.";
+      suggestion = t('monthTipLow', language);
     } else if (avgCals > calGoal * 1.2) {
-      suggestion = "Saran Strategis Bulan Depan: Seimbangkan porsi makan dengan meningkatkan porsi sayuran hijau & buah segar.";
+      suggestion = t('monthTipHigh', language);
     } else {
-      suggestion = "Saran Strategis Bulan Depan: Keseimbangan gizi bulanan berada di zona hijau sempurna. Pertahankan!";
+      suggestion = t('monthTipIdeal', language);
     }
 
     return { totalCals, avgCals, daysLogged, avgWater, evaluation, suggestion };
-  }, [activeFoodLogs, activeWaterLogs, activeProfile, activeProfileId]);
+  }, [activeFoodLogs, activeWaterLogs, activeProfile, activeProfileId, language]);
 
   const leaderboardData = useMemo(() => {
     const today = new Date().toLocaleDateString('id-ID');
@@ -1543,7 +1873,7 @@ export default function App() {
                 className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl text-gray-600 transition-colors cursor-pointer text-xs font-bold flex items-center gap-1"
               >
                 <ChevronLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Sebelum</span>
+                <span className="hidden sm:inline">{t('prev', language)}</span>
               </button>
 
               <button 
@@ -1561,19 +1891,19 @@ export default function App() {
                 onClick={() => shiftSelectedDate(1)} 
                 className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl text-gray-600 transition-colors cursor-pointer text-xs font-bold flex items-center gap-1"
               >
-                <span className="hidden sm:inline">Sesudah</span>
+                <span className="hidden sm:inline">{t('next', language)}</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
 
             {selectedDate !== todayString && (
               <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-2xl text-xs flex items-center justify-between gap-2">
-                <span>📅 Jurnal Tanggal: <strong>{selectedDate}</strong></span>
+                <span>📅 {t('journalDate', language)} <strong>{selectedDate}</strong></span>
                 <button 
                   onClick={() => setSelectedDate(todayString)}
                   className="bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded-xl font-bold transition-all text-[11px] cursor-pointer"
                 >
-                  Ke Hari Ini
+                  {t('toToday', language)}
                 </button>
               </div>
             )}
@@ -1603,7 +1933,7 @@ export default function App() {
                   {/* Progress Bar Kalori */}
                   <div className="mb-5 relative z-10 bg-black/15 p-3 rounded-2xl backdrop-blur-xs">
                     <div className="flex justify-between items-center text-xs text-green-100 mb-1.5 font-semibold">
-                      <span>Progress Kalori</span>
+                      <span>{t('calProgress', language)}</span>
                       <span className="bg-white/25 px-2.5 py-0.5 rounded-full text-white font-bold">{calPercentRaw}%</span>
                     </div>
                     <div className="w-full bg-black/20 h-3.5 rounded-full overflow-hidden p-0.5">
@@ -1647,7 +1977,7 @@ export default function App() {
                   {/* Progress Bar Air Minum */}
                   <div className="bg-blue-50/50 p-3 rounded-2xl border border-blue-100/50">
                     <div className="flex justify-between items-center text-xs text-gray-600 mb-1.5 font-medium">
-                      <span>Progress Air Minum</span>
+                      <span>{t('waterProgress', language)}</span>
                       <span className="bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full font-bold">{waterPercentRaw}%</span>
                     </div>
                     <div className="w-full bg-blue-100/80 h-3 rounded-full overflow-hidden p-0.5">
@@ -1666,7 +1996,7 @@ export default function App() {
                 <span>{t('foodJournalToday', language)} ({formatDateDisplay(selectedDate)})</span>
                 {datesWithLogs.has(selectedDate) && (
                   <span className="text-[11px] bg-green-100 text-green-800 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-600"></span> Terisi
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-600"></span> {t('filled', language)}
                   </span>
                 )}
               </h2>
@@ -1717,7 +2047,7 @@ export default function App() {
             <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/80 p-5 rounded-3xl space-y-3">
               <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                <span>Kesimpulan & Evaluasi Nutrisi ({formatDateDisplay(selectedDate)})</span>
+                <span>{t('dailySummaryTitle', language)} ({formatDateDisplay(selectedDate)})</span>
               </div>
               
               <p className="text-xs text-gray-700 leading-relaxed font-medium">
@@ -1725,14 +2055,23 @@ export default function App() {
                   const calGoal = activeProfile?.calorieGoal || 2000;
                   const pct = Math.round((totalCalories / calGoal) * 100);
                   if (foodLogsToday.length === 0) {
-                    return "Belum ada catatan makanan untuk hari ini. Gunakan fitur kamera atau foto galeri untuk mencatatkan konsumsi makanan Anda!";
+                    return t('dailySummaryEmpty', language);
                   }
                   if (pct < 70) {
-                    return `Asupan kalori baru terpenuhi ${pct}% dari target harian (${totalCalories}/${calGoal} kkal). Tingkatkan asupan makanan sehat agar stamina tubuh tetap optimal.`;
+                    return t('calStatusLow', language)
+                      .replace('{pct}', pct.toString())
+                      .replace('{total}', totalCalories.toString())
+                      .replace('{goal}', calGoal.toString());
                   } else if (pct <= 115) {
-                    return `Sangat baik! Asupan kalori terpenuhi ${pct}% dari target harian (${totalCalories}/${calGoal} kkal). Keseimbangan nutrisi Anda berada di zona hijau ideal.`;
+                    return t('calStatusIdeal', language)
+                      .replace('{pct}', pct.toString())
+                      .replace('{total}', totalCalories.toString())
+                      .replace('{goal}', calGoal.toString());
                   } else {
-                    return `Asupan kalori hari ini mencapai ${pct}% (${totalCalories}/${calGoal} kkal), melampaui target harian. Seimbangkan dengan jalan kaki atau olahraga ringan.`;
+                    return t('calStatusOver', language)
+                      .replace('{pct}', pct.toString())
+                      .replace('{total}', totalCalories.toString())
+                      .replace('{goal}', calGoal.toString());
                   }
                 })()}
               </p>
@@ -1740,18 +2079,18 @@ export default function App() {
               <div className="bg-white/80 p-3 rounded-2xl border border-emerald-100 text-xs text-emerald-900 space-y-1">
                 <p className="font-bold flex items-center gap-1 text-[11px] uppercase tracking-wider text-emerald-800">
                   <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Saran Kedepan:</span>
+                  <span>{t('futureAdviceLabel', language)}</span>
                 </p>
                 <p className="text-gray-600 font-medium leading-relaxed">
                   {(() => {
                     const waterGoal = activeProfile?.waterGoal || 2000;
                     if (waterIntake < waterGoal * 0.8) {
-                      return "Tingkatkan konsumsi air putih minimal 8 gelas sehari untuk mendukung metabolisme.";
+                      return t('waterAdvice', language);
                     }
                     if (totalProtein < 40) {
-                      return "Tambahkan porsi protein (telur, ayam, tahu/tempe) untuk mendukung otot dan stamina harian.";
+                      return t('proteinAdvice', language);
                     }
-                    return "Pertahankan porsi gizi seimbang dan cukupi waktu istirahat malam Anda.";
+                    return t('balanceAdvice', language);
                   })()}
                 </p>
               </div>
@@ -1985,16 +2324,16 @@ export default function App() {
                 <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-3">
                   <div className="flex items-center gap-2 text-gray-800 font-bold text-sm border-b border-gray-100 pb-2.5">
                     <Calendar className="w-5 h-5 text-purple-600 shrink-0"/>
-                    <span>Kesimpulan & Saran Mingguan (7 Hari Terakhir)</span>
+                    <span>{t('weeklySummaryTitle', language)}</span>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-3 text-center">
                     <div className="bg-purple-50/70 p-3 rounded-2xl border border-purple-100/50">
-                      <p className="text-[10px] text-purple-600 font-bold uppercase">Rata-Rata Kalori</p>
-                      <p className="text-lg font-extrabold text-purple-900">{weeklySummary.avgCals} <span className="text-xs font-normal text-purple-700">kkal</span></p>
+                      <p className="text-[10px] text-purple-600 font-bold uppercase">{t('avgCaloriesLabel', language)}</p>
+                      <p className="text-lg font-extrabold text-purple-900">{weeklySummary.avgCals} <span className="text-xs font-normal text-purple-700">{t('kcal', language)}</span></p>
                     </div>
                     <div className="bg-blue-50/70 p-3 rounded-2xl border border-blue-100/50">
-                      <p className="text-[10px] text-blue-600 font-bold uppercase">Rata-Rata Hidrasi</p>
+                      <p className="text-[10px] text-blue-600 font-bold uppercase">{t('avgHydrationLabel', language)}</p>
                       <p className="text-lg font-extrabold text-blue-900">{weeklySummary.avgWater} <span className="text-xs font-normal text-blue-700">ml</span></p>
                     </div>
                   </div>
@@ -2014,17 +2353,17 @@ export default function App() {
                 <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-3">
                   <div className="flex items-center gap-2 text-gray-800 font-bold text-sm border-b border-gray-100 pb-2.5">
                     <BarChart3 className="w-5 h-5 text-teal-600 shrink-0"/>
-                    <span>Kesimpulan & Saran Bulanan (30 Hari Terakhir)</span>
+                    <span>{t('monthlySummaryTitle', language)}</span>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-3 text-center">
                     <div className="bg-teal-50/70 p-3 rounded-2xl border border-teal-100/50">
-                      <p className="text-[10px] text-teal-600 font-bold uppercase">Jurnal Terisi</p>
-                      <p className="text-lg font-extrabold text-teal-900">{monthlySummary.daysLogged} / 30 <span className="text-xs font-normal text-teal-700">Hari</span></p>
+                      <p className="text-[10px] text-teal-600 font-bold uppercase">{t('daysLoggedLabel', language)}</p>
+                      <p className="text-lg font-extrabold text-teal-900">{monthlySummary.daysLogged} / 30 <span className="text-xs font-normal text-teal-700">{t('daysUnit', language)}</span></p>
                     </div>
                     <div className="bg-orange-50/70 p-3 rounded-2xl border border-orange-100/50">
-                      <p className="text-[10px] text-orange-600 font-bold uppercase">Rata-Rata Kalori</p>
-                      <p className="text-lg font-extrabold text-orange-900">{monthlySummary.avgCals} <span className="text-xs font-normal text-orange-700">kkal</span></p>
+                      <p className="text-[10px] text-orange-600 font-bold uppercase">{t('avgCaloriesLabel', language)}</p>
+                      <p className="text-lg font-extrabold text-orange-900">{monthlySummary.avgCals} <span className="text-xs font-normal text-orange-700">{t('kcal', language)}</span></p>
                     </div>
                   </div>
 
@@ -2245,7 +2584,7 @@ export default function App() {
               <div className="flex justify-between items-center border-b border-gray-100 pb-3">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-green-600" />
-                  <h3 className="font-bold text-gray-800 text-base">Pilih Tanggal Jurnal</h3>
+                  <h3 className="font-bold text-gray-800 text-base">{t('selectCalendarDate', language)}</h3>
                 </div>
                 <X className="w-6 h-6 text-gray-400 hover:text-gray-600 cursor-pointer" onClick={() => setIsCalendarOpen(false)} />
               </div>
@@ -2305,7 +2644,7 @@ export default function App() {
               {/* Shortcut Ke Hari Ini */}
               <div className="pt-2 border-t border-gray-100 flex justify-between items-center text-xs">
                 <span className="text-gray-400 flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span> Jurnal Terisi
+                  <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span> {t('filled', language)}
                 </span>
                 <button
                   onClick={() => {
@@ -2315,7 +2654,7 @@ export default function App() {
                   }}
                   className="bg-green-50 hover:bg-green-100 text-green-700 font-bold px-3 py-1.5 rounded-xl border border-green-200 transition-colors cursor-pointer"
                 >
-                  Ke Hari Ini
+                  {t('toToday', language)}
                 </button>
               </div>
             </div>
