@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Camera, Plus, Flame, Beef, Droplet, X, Loader2, CheckCircle2, 
   AlertCircle, Cloud, User, Settings, Pencil, 
-  GlassWater, Minus, Image as ImageIcon, Calendar, ChevronDown, ChevronUp, 
+  GlassWater, Minus, Image as ImageIcon, Calendar, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, 
   Users, KeyRound, LogOut, ShieldCheck, Menu, Dumbbell, BookOpen, 
   Trophy, Home, Crown, PlayCircle, Timer, Sparkles, ChefHat, BarChart3, Send, Heart, ExternalLink,
   Moon, Sun, Globe, Bot, Lock, LogIn, ShieldAlert, Check
@@ -34,6 +34,7 @@ interface FoodLog {
   protein: number;
   carbs: number;
   fat: number;
+  healthTip?: string;
   imageUrl?: string;
   timestamp?: string;
   dateString: string;
@@ -383,6 +384,85 @@ export default function App() {
 
   const getTodayDateString = () => new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
 
+  // Calendar & Date Selector States
+  const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toLocaleDateString('id-ID'));
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [calendarViewDate, setCalendarViewDate] = useState<Date>(new Date());
+  const [nameSuggestions, setNameSuggestions] = useState<string[]>([]);
+
+  // Health Tip Generator
+  const getHealthTip = (name: string, cal: number, pro: number, carb: number, fat: number, customTip?: string) => {
+    if (customTip && customTip.trim()) return customTip;
+    if (fat > 20) {
+      return "Makanan ini cukup tinggi lemak. Imbangi dengan perbanyak minum air putih dan pilih sayuran hijau segar.";
+    }
+    if (pro >= 18) {
+      return "Sangat kaya protein! Bagus untuk pembentukan jaringan otot, stamina harian, dan menjaga rasa kenyang lebih lama.";
+    }
+    if (carb >= 45) {
+      return "Asupan karbohidrat tinggi sebagai bahan bakar energi. Cocok dikonsumsi sebelum atau sesudah beraktivitas aktif.";
+    }
+    return "Porsi nutrisi seimbang! Pastikan pemenuhan kebutuhan hidrasi air putih harian Anda terpenuhi.";
+  };
+
+  // Name Suggestions Generator for Room Code
+  const getNameSuggestions = (code: string) => {
+    const base = code.trim().replace(/[^a-zA-Z0-9]/g, '') || 'KeluargaBudi';
+    const year = new Date().getFullYear();
+    return [
+      `${base}_${year}`,
+      `${base}_Sehat`,
+      `${base}_${Math.floor(10 + Math.random() * 89 + 10)}`,
+      `${base}_Family`
+    ];
+  };
+
+  // Format Date for Display (e.g. Rabu, 6 Agu 2026)
+  const formatDateDisplay = (dateStr: string) => {
+    if (dateStr === new Date().toLocaleDateString('id-ID')) return 'Hari Ini';
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+      }
+    }
+    return dateStr;
+  };
+
+  // Shift selected date by N days
+  const shiftSelectedDate = (days: number) => {
+    const parts = selectedDate.split('/');
+    let d = new Date();
+    if (parts.length === 3) {
+      d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+    }
+    d.setDate(d.getDate() + days);
+    setSelectedDate(d.toLocaleDateString('id-ID'));
+  };
+
+  // Auto Midnight Refresh (Refreshes date past 12 AM local time)
+  useEffect(() => {
+    let lastDate = new Date().toLocaleDateString('id-ID');
+    const timer = setInterval(() => {
+      const currentDate = new Date().toLocaleDateString('id-ID');
+      if (currentDate !== lastDate) {
+        lastDate = currentDate;
+        setSelectedDate(currentDate);
+      }
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Update room code suggestions on input
+  useEffect(() => {
+    if (codeInput.trim()) {
+      setNameSuggestions(getNameSuggestions(codeInput));
+    } else {
+      setNameSuggestions([]);
+    }
+  }, [codeInput]);
+
   // Firebase auth sync if auth is configured
   useEffect(() => {
     const initAuth = async () => {
@@ -504,9 +584,125 @@ export default function App() {
   const activeWaterLogs = allWaterLogsRaw.filter(log => log.profileId === activeProfileId);
   
   const todayString = new Date().toLocaleDateString('id-ID');
-  const foodLogsToday = activeFoodLogs.filter(log => log.dateString === todayString);
-  const todayWaterLog = activeWaterLogs.find(log => log.dateString === getTodayDateString());
+  const foodLogsToday = activeFoodLogs.filter(log => log.dateString === selectedDate);
+  const todayWaterLog = activeWaterLogs.find(log => log.dateString === selectedDate || (selectedDate === todayString && log.dateString === getTodayDateString()));
   const waterIntake = todayWaterLog ? todayWaterLog.amount : 0;
+
+  // Set of dates that have entries
+  const datesWithLogs = useMemo(() => {
+    const dates = new Set<string>();
+    activeFoodLogs.forEach(l => { if (l.dateString) dates.add(l.dateString); });
+    activeWaterLogs.forEach(w => { if (w.dateString) dates.add(w.dateString); });
+    return dates;
+  }, [activeFoodLogs, activeWaterLogs]);
+
+  // Calendar days grid calculation
+  const calendarDays = useMemo(() => {
+    const year = calendarViewDate.getFullYear();
+    const month = calendarViewDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    const startDayOfWeek = firstDay.getDay(); // 0 = Sun
+    const totalDays = lastDay.getDate();
+
+    const days = [];
+    for (let i = 0; i < startDayOfWeek; i++) {
+      days.push(null);
+    }
+    for (let day = 1; day <= totalDays; day++) {
+      const d = new Date(year, month, day);
+      const dateStr = d.toLocaleDateString('id-ID');
+      days.push({
+        day,
+        dateStr,
+        isToday: dateStr === todayString,
+        isSelected: dateStr === selectedDate,
+        hasLogs: datesWithLogs.has(dateStr)
+      });
+    }
+    return days;
+  }, [calendarViewDate, datesWithLogs, selectedDate, todayString]);
+
+  // Weekly & Monthly Periodic Summaries
+  const weeklySummary = useMemo(() => {
+    if (!activeProfileId) return null;
+    const now = new Date();
+    const past7Days: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      past7Days.push(d.toLocaleDateString('id-ID'));
+    }
+
+    const logs7 = activeFoodLogs.filter(log => past7Days.includes(log.dateString));
+    const water7 = activeWaterLogs.filter(log => past7Days.includes(log.dateString));
+
+    const totalCals = logs7.reduce((s, l) => s + (l.calories || 0), 0);
+    const avgCals = Math.round(totalCals / 7);
+    const daysLogged = new Set(logs7.map(l => l.dateString)).size;
+    const totalWater = water7.reduce((s, w) => s + (w.amount || 0), 0);
+    const avgWater = Math.round(totalWater / 7);
+
+    const calGoal = activeProfile?.calorieGoal || 2000;
+    let evaluation = "";
+    let suggestion = "";
+
+    if (avgCals < calGoal * 0.7) {
+      evaluation = "Rata-rata asupan kalori 7 hari terakhir tergolong di bawah batas aman.";
+      suggestion = "Saran Minggu Depan: Tingkatkan porsi karbohidrat kompleks & protein sehat saat sarapan dan makan siang.";
+    } else if (avgCals > calGoal * 1.25) {
+      evaluation = "Rata-rata kalori mingguan sedikit melampaui batas target harian.";
+      suggestion = "Saran Minggu Depan: Kurangi camilan malam & tingkatkan durasi jalan kaki / latihan kardio ringan.";
+    } else {
+      evaluation = "Rata-rata kalori mingguan Anda sangat ideal dan sesuai dengan kebutuhan tubuh!";
+      suggestion = "Saran Minggu Depan: Pertahankan pola nutrisi ini dan pastikan minum air putih minimal 2.000 ml setiap hari.";
+    }
+
+    return { totalCals, avgCals, daysLogged, avgWater, evaluation, suggestion };
+  }, [activeFoodLogs, activeWaterLogs, activeProfile, activeProfileId]);
+
+  const monthlySummary = useMemo(() => {
+    if (!activeProfileId) return null;
+    const now = new Date();
+    const past30Days: string[] = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      past30Days.push(d.toLocaleDateString('id-ID'));
+    }
+
+    const logs30 = activeFoodLogs.filter(log => past30Days.includes(log.dateString));
+    const water30 = activeWaterLogs.filter(log => past30Days.includes(log.dateString));
+
+    const totalCals = logs30.reduce((s, l) => s + (l.calories || 0), 0);
+    const avgCals = Math.round(totalCals / 30);
+    const daysLogged = new Set(logs30.map(l => l.dateString)).size;
+    const totalWater = water30.reduce((s, w) => s + (w.amount || 0), 0);
+    const avgWater = Math.round(totalWater / 30);
+
+    const calGoal = activeProfile?.calorieGoal || 2000;
+    let evaluation = "";
+    let suggestion = "";
+
+    if (daysLogged >= 20) {
+      evaluation = `Sangat Disiplin! Anda aktif mencatatkan jurnal nutrisi selama ${daysLogged} dari 30 hari terakhir.`;
+    } else if (daysLogged >= 10) {
+      evaluation = `Cukup Teratur! Tercatat ${daysLogged} hari jurnal nutrisi terisi bulan ini.`;
+    } else {
+      evaluation = `Tercatat ${daysLogged} hari jurnal terisi bulan ini. Mari dorong konsistensi harian Anda.`;
+    }
+
+    if (avgCals < calGoal * 0.8) {
+      suggestion = "Saran Strategis Bulan Depan: Perhatikan konsistensi makan utama 3 kali sehari agar energi tidak cepat habis.";
+    } else if (avgCals > calGoal * 1.2) {
+      suggestion = "Saran Strategis Bulan Depan: Seimbangkan porsi makan dengan meningkatkan porsi sayuran hijau & buah segar.";
+    } else {
+      suggestion = "Saran Strategis Bulan Depan: Keseimbangan gizi bulanan berada di zona hijau sempurna. Pertahankan!";
+    }
+
+    return { totalCals, avgCals, daysLogged, avgWater, evaluation, suggestion };
+  }, [activeFoodLogs, activeWaterLogs, activeProfile, activeProfileId]);
 
   const leaderboardData = useMemo(() => {
     const today = new Date().toLocaleDateString('id-ID');
@@ -962,6 +1158,15 @@ export default function App() {
     if (!analysisResult || !activeProfileId || !familyCode) return;
     setIsCloudSyncing(true);
     const now = new Date();
+    const calculatedTip = getHealthTip(
+      analysisResult.name,
+      analysisResult.calories || 0,
+      analysisResult.protein || 0,
+      analysisResult.carbs || 0,
+      analysisResult.fat || 0,
+      analysisResult.healthTip
+    );
+
     const newLog: FoodLog = {
       id: `log_${Date.now()}`,
       profileId: activeProfileId,
@@ -970,6 +1175,7 @@ export default function App() {
       protein: analysisResult.protein || 0,
       carbs: analysisResult.carbs || 0,
       fat: analysisResult.fat || 0,
+      healthTip: calculatedTip,
       imageUrl: currentImage || undefined,
       timestamp: now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
       dateString: now.toLocaleDateString('id-ID'),
@@ -1034,6 +1240,30 @@ export default function App() {
                   className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3.5 pl-12 pr-4 text-gray-800 font-bold focus:outline-none focus:ring-2 focus:ring-green-500 transition-all text-sm"
                 />
               </div>
+
+              {nameSuggestions.length > 0 && (
+                <div className="mt-2.5 p-3 bg-green-50/90 border border-green-200 rounded-2xl text-left">
+                  <p className="text-[11px] font-bold text-green-800 mb-1.5 flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-green-600 shrink-0"/>
+                    <span>Saran Nama Keluarga Unik (Ketuk untuk pilih):</span>
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {nameSuggestions.map((sug, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setCodeInput(sug);
+                          setJoinError(null);
+                        }}
+                        className="bg-white hover:bg-green-100 border border-green-300 text-green-800 text-xs px-2.5 py-1 rounded-xl font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                      >
+                        {sug}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -1251,7 +1481,7 @@ export default function App() {
       )}
 
       <div className="w-full max-w-md bg-white min-h-screen shadow-xl relative flex flex-col">
-        <header className="px-5 py-4 border-b border-gray-100 flex justify-between items-center sticky top-0 z-10 bg-white">
+        <header className="px-5 py-4 border-b border-gray-100 flex justify-between items-center sticky top-0 z-40 bg-white">
           <div className="flex items-center gap-3">
             <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 bg-white hover:bg-gray-100 rounded-full transition-colors">
               <Menu className="w-6 h-6 text-gray-700" />
@@ -1269,18 +1499,26 @@ export default function App() {
             
             {/* Bahasa Dropdown Toggle */}
             <div className="relative shrink-0">
-              <button onClick={() => setIsLangMenuOpen(!isLangMenuOpen)} className="p-2 bg-gray-100 hover:bg-gray-200 transition-colors rounded-full text-gray-600">
+              <button onClick={() => setIsLangMenuOpen(!isLangMenuOpen)} className="p-2 bg-gray-100 hover:bg-gray-200 transition-colors rounded-full text-gray-600 cursor-pointer">
                 <Globe className="w-4 h-4"/>
               </button>
               {isLangMenuOpen && (
-                <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 max-h-60 overflow-y-auto divide-y divide-gray-50">
-                  {Object.keys(langNames).map(langKey => (
-                    <button key={langKey} onClick={() => handleLanguageChange(langKey)} className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors flex items-center justify-between ${language === langKey ? 'font-bold text-green-600 bg-green-50' : 'text-gray-700'}`}>
-                      <span>{langNames[langKey]}</span>
-                      {language === langKey && <span className="w-2 h-2 rounded-full bg-green-500"></span>}
-                    </button>
-                  ))}
-                </div>
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsLangMenuOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 max-h-64 overflow-y-auto divide-y divide-gray-100">
+                    {Object.keys(langNames).map(langKey => (
+                      <button 
+                        key={langKey} 
+                        type="button"
+                        onClick={() => handleLanguageChange(langKey)} 
+                        className={`w-full text-left px-4 py-3 text-xs font-bold hover:bg-green-50 transition-colors flex items-center justify-between cursor-pointer ${language === langKey ? 'text-green-600 bg-green-50/80 font-extrabold' : 'text-gray-700'}`}
+                      >
+                        <span>{langNames[langKey]}</span>
+                        {language === langKey && <span className="w-2 h-2 rounded-full bg-green-500 shrink-0"></span>}
+                      </button>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
 
@@ -1298,6 +1536,48 @@ export default function App() {
 
         {currentView === 'dashboard' && (
           <main className="flex-1 overflow-y-auto p-6 space-y-6">
+            {/* Navigasi Tanggal & Kalender Jurnal */}
+            <div className="bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-2">
+              <button 
+                onClick={() => shiftSelectedDate(-1)} 
+                className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl text-gray-600 transition-colors cursor-pointer text-xs font-bold flex items-center gap-1"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Sebelum</span>
+              </button>
+
+              <button 
+                onClick={() => setIsCalendarOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-green-50 hover:bg-green-100 border border-green-200 text-green-800 rounded-xl transition-all cursor-pointer shadow-xs"
+              >
+                <Calendar className="w-4 h-4 text-green-600 shrink-0" />
+                <span className="text-xs font-extrabold">{formatDateDisplay(selectedDate)}</span>
+                {datesWithLogs.has(selectedDate) && (
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                )}
+              </button>
+
+              <button 
+                onClick={() => shiftSelectedDate(1)} 
+                className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl text-gray-600 transition-colors cursor-pointer text-xs font-bold flex items-center gap-1"
+              >
+                <span className="hidden sm:inline">Sesudah</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {selectedDate !== todayString && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-2xl text-xs flex items-center justify-between gap-2">
+                <span>📅 Jurnal Tanggal: <strong>{selectedDate}</strong></span>
+                <button 
+                  onClick={() => setSelectedDate(todayString)}
+                  className="bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded-xl font-bold transition-all text-[11px] cursor-pointer"
+                >
+                  Ke Hari Ini
+                </button>
+              </div>
+            )}
+
             {/* Kartu Progress Kalori Harian */}
             {(() => {
               const calGoal = activeProfile?.calorieGoal || 2000;
@@ -1359,8 +1639,8 @@ export default function App() {
                       </div>
                     </div>
                     <div className="flex gap-1.5">
-                      <button onClick={() => handleUpdateWater(250)} className="bg-blue-50 hover:bg-blue-100 transition-colors text-blue-600 px-3 py-1.5 rounded-xl text-sm font-bold flex items-center justify-center gap-1"><Plus className="w-4 h-4"/> 250ml</button>
-                      <button onClick={() => handleUpdateWater(-250)} disabled={waterIntake===0} className="bg-gray-50 hover:bg-gray-100 transition-colors text-gray-500 px-3 py-1.5 rounded-xl text-sm font-bold flex items-center justify-center gap-1 disabled:opacity-50"><Minus className="w-4 h-4"/> {t('undo', language)}</button>
+                      <button onClick={() => handleUpdateWater(250)} className="bg-blue-50 hover:bg-blue-100 transition-colors text-blue-600 px-3 py-1.5 rounded-xl text-sm font-bold flex items-center justify-center gap-1 cursor-pointer"><Plus className="w-4 h-4"/> 250ml</button>
+                      <button onClick={() => handleUpdateWater(-250)} disabled={waterIntake===0} className="bg-gray-50 hover:bg-gray-100 transition-colors text-gray-500 px-3 py-1.5 rounded-xl text-sm font-bold flex items-center justify-center gap-1 disabled:opacity-50 cursor-pointer"><Minus className="w-4 h-4"/> {t('undo', language)}</button>
                     </div>
                   </div>
 
@@ -1382,7 +1662,14 @@ export default function App() {
             })()}
 
             <div>
-              <h2 className="font-bold mb-4 text-gray-800">{t('foodJournalToday', language)}</h2>
+              <h2 className="font-bold mb-4 text-gray-800 flex items-center justify-between">
+                <span>{t('foodJournalToday', language)} ({formatDateDisplay(selectedDate)})</span>
+                {datesWithLogs.has(selectedDate) && (
+                  <span className="text-[11px] bg-green-100 text-green-800 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-600"></span> Terisi
+                  </span>
+                )}
+              </h2>
               {foodLogsToday.length === 0 ? (
                 <div className="bg-gray-50 p-8 rounded-2xl text-center border-2 border-dashed border-gray-200">
                   <Camera className="w-8 h-8 mx-auto text-gray-400 mb-2"/>
@@ -1391,30 +1678,83 @@ export default function App() {
               ) : (
                 <div className="space-y-4">
                   {foodLogsToday.map(log => (
-                    <div key={log.id} className="bg-white p-4 rounded-2xl border flex gap-4 items-center shadow-sm">
-                      {log.imageUrl ? (
-                        <img src={log.imageUrl} alt={log.name} className="w-16 h-16 rounded-xl object-cover border border-gray-100" />
-                      ) : (
-                        <div className="w-16 h-16 rounded-xl bg-green-50 flex items-center justify-center text-green-600 font-bold border border-gray-100">
-                          <ChefHat className="w-8 h-8"/>
+                    <div key={log.id} className="bg-white p-4 rounded-2xl border flex flex-col gap-3 shadow-sm">
+                      <div className="flex gap-4 items-center">
+                        {log.imageUrl ? (
+                          <img src={log.imageUrl} alt={log.name} className="w-16 h-16 rounded-xl object-cover border border-gray-100" />
+                        ) : (
+                          <div className="w-16 h-16 rounded-xl bg-green-50 flex items-center justify-center text-green-600 font-bold border border-gray-100">
+                            <ChefHat className="w-8 h-8"/>
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h3 className="font-bold text-gray-800 capitalize">{log.name}</h3>
+                          <p className="text-xs text-gray-400">{log.timestamp}</p>
+                          <div className="text-xs mt-1.5 flex gap-2">
+                            <span className="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-medium">P:{log.protein}g</span>
+                            <span className="text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded font-medium">K:{log.carbs}g</span>
+                            <span className="text-red-600 bg-red-50 px-1.5 py-0.5 rounded font-medium">L:{log.fat}g</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-bold text-green-600 text-lg">{log.calories}</span><p className="text-[10px] text-gray-400 uppercase font-medium">{t('kcal', language)}</p>
+                        </div>
+                      </div>
+
+                      {log.healthTip && (
+                        <div className="text-[11px] bg-emerald-50 text-emerald-900 border border-emerald-100 p-2.5 rounded-xl flex items-start gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <span className="leading-tight font-medium">{log.healthTip}</span>
                         </div>
                       )}
-                      <div className="flex-1">
-                        <h3 className="font-bold text-gray-800 capitalize">{log.name}</h3>
-                        <p className="text-xs text-gray-400">{log.timestamp}</p>
-                        <div className="text-xs mt-2 flex gap-2">
-                          <span className="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-medium">P:{log.protein}</span>
-                          <span className="text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded font-medium">K:{log.carbs}</span>
-                          <span className="text-red-600 bg-red-50 px-1.5 py-0.5 rounded font-medium">L:{log.fat}</span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <span className="font-bold text-green-600 text-lg">{log.calories}</span><p className="text-[10px] text-gray-400 uppercase font-medium">{t('kcal', language)}</p>
-                      </div>
                     </div>
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Kartu Kesimpulan Harian */}
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/80 p-5 rounded-3xl space-y-3">
+              <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <span>Kesimpulan & Evaluasi Nutrisi ({formatDateDisplay(selectedDate)})</span>
+              </div>
+              
+              <p className="text-xs text-gray-700 leading-relaxed font-medium">
+                {(() => {
+                  const calGoal = activeProfile?.calorieGoal || 2000;
+                  const pct = Math.round((totalCalories / calGoal) * 100);
+                  if (foodLogsToday.length === 0) {
+                    return "Belum ada catatan makanan untuk hari ini. Gunakan fitur kamera atau foto galeri untuk mencatatkan konsumsi makanan Anda!";
+                  }
+                  if (pct < 70) {
+                    return `Asupan kalori baru terpenuhi ${pct}% dari target harian (${totalCalories}/${calGoal} kkal). Tingkatkan asupan makanan sehat agar stamina tubuh tetap optimal.`;
+                  } else if (pct <= 115) {
+                    return `Sangat baik! Asupan kalori terpenuhi ${pct}% dari target harian (${totalCalories}/${calGoal} kkal). Keseimbangan nutrisi Anda berada di zona hijau ideal.`;
+                  } else {
+                    return `Asupan kalori hari ini mencapai ${pct}% (${totalCalories}/${calGoal} kkal), melampaui target harian. Seimbangkan dengan jalan kaki atau olahraga ringan.`;
+                  }
+                })()}
+              </p>
+
+              <div className="bg-white/80 p-3 rounded-2xl border border-emerald-100 text-xs text-emerald-900 space-y-1">
+                <p className="font-bold flex items-center gap-1 text-[11px] uppercase tracking-wider text-emerald-800">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Saran Kedepan:</span>
+                </p>
+                <p className="text-gray-600 font-medium leading-relaxed">
+                  {(() => {
+                    const waterGoal = activeProfile?.waterGoal || 2000;
+                    if (waterIntake < waterGoal * 0.8) {
+                      return "Tingkatkan konsumsi air putih minimal 8 gelas sehari untuk mendukung metabolisme.";
+                    }
+                    if (totalProtein < 40) {
+                      return "Tambahkan porsi protein (telur, ayam, tahu/tempe) untuk mendukung otot dan stamina harian.";
+                    }
+                    return "Pertahankan porsi gizi seimbang dan cukupi waktu istirahat malam Anda.";
+                  })()}
+                </p>
+              </div>
             </div>
           </main>
         )}
@@ -1639,6 +1979,64 @@ export default function App() {
                   ))}
                 </div>
               </div>
+
+              {/* Kesimpulan & Saran Mingguan */}
+              {weeklySummary && (
+                <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-3">
+                  <div className="flex items-center gap-2 text-gray-800 font-bold text-sm border-b border-gray-100 pb-2.5">
+                    <Calendar className="w-5 h-5 text-purple-600 shrink-0"/>
+                    <span>Kesimpulan & Saran Mingguan (7 Hari Terakhir)</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 text-center">
+                    <div className="bg-purple-50/70 p-3 rounded-2xl border border-purple-100/50">
+                      <p className="text-[10px] text-purple-600 font-bold uppercase">Rata-Rata Kalori</p>
+                      <p className="text-lg font-extrabold text-purple-900">{weeklySummary.avgCals} <span className="text-xs font-normal text-purple-700">kkal</span></p>
+                    </div>
+                    <div className="bg-blue-50/70 p-3 rounded-2xl border border-blue-100/50">
+                      <p className="text-[10px] text-blue-600 font-bold uppercase">Rata-Rata Hidrasi</p>
+                      <p className="text-lg font-extrabold text-blue-900">{weeklySummary.avgWater} <span className="text-xs font-normal text-blue-700">ml</span></p>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-3.5 rounded-2xl border border-gray-100 text-xs text-gray-700 space-y-1.5">
+                    <p className="font-bold text-gray-800">{weeklySummary.evaluation}</p>
+                    <p className="text-purple-700 font-semibold leading-relaxed flex items-start gap-1.5">
+                      <Sparkles className="w-4 h-4 text-purple-500 shrink-0 mt-0.5" />
+                      <span>{weeklySummary.suggestion}</span>
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Kesimpulan & Saran Bulanan */}
+              {monthlySummary && (
+                <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-3">
+                  <div className="flex items-center gap-2 text-gray-800 font-bold text-sm border-b border-gray-100 pb-2.5">
+                    <BarChart3 className="w-5 h-5 text-teal-600 shrink-0"/>
+                    <span>Kesimpulan & Saran Bulanan (30 Hari Terakhir)</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 text-center">
+                    <div className="bg-teal-50/70 p-3 rounded-2xl border border-teal-100/50">
+                      <p className="text-[10px] text-teal-600 font-bold uppercase">Jurnal Terisi</p>
+                      <p className="text-lg font-extrabold text-teal-900">{monthlySummary.daysLogged} / 30 <span className="text-xs font-normal text-teal-700">Hari</span></p>
+                    </div>
+                    <div className="bg-orange-50/70 p-3 rounded-2xl border border-orange-100/50">
+                      <p className="text-[10px] text-orange-600 font-bold uppercase">Rata-Rata Kalori</p>
+                      <p className="text-lg font-extrabold text-orange-900">{monthlySummary.avgCals} <span className="text-xs font-normal text-orange-700">kkal</span></p>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-3.5 rounded-2xl border border-gray-100 text-xs text-gray-700 space-y-1.5">
+                    <p className="font-bold text-gray-800">{monthlySummary.evaluation}</p>
+                    <p className="text-teal-700 font-semibold leading-relaxed flex items-start gap-1.5">
+                      <Sparkles className="w-4 h-4 text-teal-500 shrink-0 mt-0.5" />
+                      <span>{monthlySummary.suggestion}</span>
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </main>
         )}
@@ -1810,12 +2208,114 @@ export default function App() {
                         <div className="flex items-center"><input type="number" name="fat" value={analysisResult.fat || 0} onChange={handleEditAnalysis} className="w-10 bg-transparent text-center font-bold text-red-600 text-lg focus:outline-none"/>g</div>
                       </div>
                     </div>
+
+                    {/* Saran Kesehatan Nutrisi */}
+                    <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-left">
+                      <p className="text-xs font-bold text-emerald-800 flex items-center gap-1.5 mb-1">
+                        <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Saran Kesehatan Nutrisi:</span>
+                      </p>
+                      <p className="text-xs text-emerald-900 leading-relaxed font-medium">
+                        {getHealthTip(
+                          analysisResult.name,
+                          analysisResult.calories || 0,
+                          analysisResult.protein || 0,
+                          analysisResult.carbs || 0,
+                          analysisResult.fat || 0,
+                          analysisResult.healthTip
+                        )}
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
               <div className="p-4 border-t bg-gray-50 rounded-b-3xl">
                 <button onClick={handleSaveToCloud} disabled={!analysisResult || isAnalyzing} className="w-full bg-green-500 hover:bg-green-600 text-white py-3.5 rounded-xl font-bold text-lg disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors shadow-sm">
                   {t('saveFor', language)} {activeProfile?.name}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Kalender Jurnal */}
+        {isCalendarOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4">
+            <div className="bg-white w-full max-w-sm rounded-3xl flex flex-col shadow-2xl p-5 space-y-4">
+              <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-green-600" />
+                  <h3 className="font-bold text-gray-800 text-base">Pilih Tanggal Jurnal</h3>
+                </div>
+                <X className="w-6 h-6 text-gray-400 hover:text-gray-600 cursor-pointer" onClick={() => setIsCalendarOpen(false)} />
+              </div>
+
+              {/* Pemindah Bulan */}
+              <div className="flex justify-between items-center px-1">
+                <button 
+                  onClick={() => setCalendarViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+                  className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4 text-gray-700" />
+                </button>
+                <span className="font-bold text-sm text-gray-800">
+                  {calendarViewDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+                </span>
+                <button 
+                  onClick={() => setCalendarViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+                  className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
+                >
+                  <ChevronRight className="w-4 h-4 text-gray-700" />
+                </button>
+              </div>
+
+              {/* Hari Header */}
+              <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-gray-400 uppercase">
+                <span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span>
+              </div>
+
+              {/* Grid Tanggal */}
+              <div className="grid grid-cols-7 gap-1 text-center">
+                {calendarDays.map((item, idx) => {
+                  if (!item) return <div key={idx} className="h-9"></div>;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setSelectedDate(item.dateStr);
+                        setIsCalendarOpen(false);
+                      }}
+                      className={`h-9 rounded-xl text-xs font-bold transition-all relative flex items-center justify-center cursor-pointer ${
+                        item.isSelected 
+                          ? 'bg-green-600 text-white shadow-md' 
+                          : item.isToday 
+                            ? 'bg-green-100 text-green-800 border border-green-300' 
+                            : 'hover:bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      <span>{item.day}</span>
+                      {item.hasLogs && (
+                        <span className={`absolute bottom-1 w-1.5 h-1.5 rounded-full ${item.isSelected ? 'bg-white' : 'bg-green-500'}`}></span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Shortcut Ke Hari Ini */}
+              <div className="pt-2 border-t border-gray-100 flex justify-between items-center text-xs">
+                <span className="text-gray-400 flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span> Jurnal Terisi
+                </span>
+                <button
+                  onClick={() => {
+                    setSelectedDate(todayString);
+                    setCalendarViewDate(new Date());
+                    setIsCalendarOpen(false);
+                  }}
+                  className="bg-green-50 hover:bg-green-100 text-green-700 font-bold px-3 py-1.5 rounded-xl border border-green-200 transition-colors cursor-pointer"
+                >
+                  Ke Hari Ini
                 </button>
               </div>
             </div>

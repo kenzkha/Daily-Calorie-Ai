@@ -124,7 +124,7 @@ async function callGroqVision(imageBase64: string, groqApiKey: string) {
     ? imageBase64
     : `data:image/jpeg;base64,${imageBase64}`;
 
-  const promptText = `Analisis gambar ini. Apakah ini gambar makanan/minuman? Jika ya, estimasi nama (Indonesia), kalori(kkal), protein(g), karbohidrat(g), lemak(g). Jika bukan makanan/minuman, atur isFood menjadi false.\n\nKembalikan HANYA JSON valid tanpa teks atau markdown lain:\n{\n  "name": "Nasi Goreng",\n  "calories": 350,\n  "protein": 12,\n  "carbs": 45,\n  "fat": 10,\n  "isFood": true\n}`;
+  const promptText = `Analisis gambar ini. Apakah ini gambar makanan/minuman? Jika ya, estimasi nama (Indonesia), kalori(kkal), protein(g), karbohidrat(g), lemak(g), dan berikan 1-2 kalimat saran kesehatan & nutrisi singkat yang relevan. Jika bukan makanan/minuman, atur isFood menjadi false.\n\nKembalikan HANYA JSON valid tanpa teks atau markdown lain:\n{\n  "name": "Nasi Goreng",\n  "calories": 350,\n  "protein": 12,\n  "carbs": 45,\n  "fat": 10,\n  "healthTip": "Perhatikan porsi minyak. Seimbangkan dengan tambahkan sayuran atau telur dadar tinggi protein.",\n  "isFood": true\n}`;
 
   const allErrors: string[] = [];
   for (const model of models) {
@@ -217,7 +217,7 @@ app.post(["/api/analyze-food", "/analyze-food"], async (req, res) => {
                 role: "user",
                 parts: [
                   {
-                    text: "Analisis gambar ini. Apakah ini gambar makanan/minuman? Jika ya, estimasi nama (Indonesia), kalori(kkal), protein(g), karbohidrat(g), lemak(g). Jika bukan makanan/minuman, atur isFood menjadi false.",
+                    text: "Analisis gambar ini. Apakah ini gambar makanan/minuman? Jika ya, estimasi nama (Indonesia), kalori(kkal), protein(g), karbohidrat(g), lemak(g), dan berikan 1-2 kalimat saran kesehatan & nutrisi singkat (healthTip) yang relevan. Jika bukan makanan/minuman, atur isFood menjadi false.",
                   },
                   {
                     inlineData: {
@@ -238,6 +238,7 @@ app.post(["/api/analyze-food", "/analyze-food"], async (req, res) => {
                   protein: { type: Type.INTEGER },
                   carbs: { type: Type.INTEGER },
                   fat: { type: Type.INTEGER },
+                  healthTip: { type: Type.STRING },
                   isFood: { type: Type.BOOLEAN },
                 },
                 required: ["name", "calories", "protein", "carbs", "fat", "isFood"],
