@@ -102,14 +102,14 @@ const fetchWithRetry = async (url: string, options: RequestInit, retries = 3) =>
           rawErr = rawErr.message || JSON.stringify(rawErr);
         }
         let errMsg = rawErr || `HTTP error! status: ${response.status}`;
-        if (typeof errMsg === "string" && (errMsg.includes("RESOURCE_EXHAUSTED") || errMsg.includes("Quota exceeded") || errMsg.includes("429"))) {
-          errMsg = "⚠️ Batas kuota gratis Gemini AI terlampaui (Rate Limit / Quota Exceeded). Silakan tunggu 30 - 60 detik sebelum mencoba lagi.";
+        if (typeof errMsg === "string" && (errMsg.includes("RESOURCE_EXHAUSTED") || errMsg.includes("Quota exceeded") || errMsg.includes("rate_limit_exceeded") || errMsg.includes("429"))) {
+          errMsg = "⚠️ Batas permintaan Groq AI tercapai (Rate Limit). Silakan tunggu beberapa detik sebelum mencoba lagi.";
         }
         throw new Error(errMsg);
       }
       return await response.json();
     } catch (err: any) {
-      if (err?.message?.includes("Batas kuota gratis")) throw err;
+      if (err?.message?.includes("Batas permintaan Groq") || err?.message?.includes("Batas kuota")) throw err;
       if (i === retries - 1) throw err;
       await new Promise(resolve => setTimeout(resolve, delays[i]));
     }
