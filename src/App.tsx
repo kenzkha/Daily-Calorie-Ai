@@ -6,7 +6,8 @@ import {
   Users, KeyRound, LogOut, ShieldCheck, Menu, Dumbbell, BookOpen, 
   Trophy, Home, Crown, PlayCircle, Timer, Sparkles, ChefHat, BarChart3, Send, Heart, ExternalLink,
   Moon, Sun, Globe, Bot, Lock, LogIn, ShieldAlert, Check,
-  Mail, FileText, Coffee, Utensils, Eye, EyeOff, UserCheck, RefreshCw, Info, HelpCircle, Smartphone, PenLine
+  Mail, FileText, Coffee, Utensils, Eye, EyeOff, UserCheck, RefreshCw, Info, HelpCircle, Smartphone, PenLine,
+  FileSpreadsheet, FolderKanban
 } from 'lucide-react';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { 
@@ -15,6 +16,7 @@ import {
   sendPasswordResetEmail, updateProfile 
 } from 'firebase/auth';
 import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, getDoc, getDocs, Firestore } from 'firebase/firestore';
+import { logUserToGoogleDrive, getDriveRegisteredUsers } from './lib/driveLogger';
 
 // --- TYPES ---
 interface Profile {
@@ -187,7 +189,13 @@ const uiDict: Record<string, Record<string, string>> = {
     resetPasswordTitle: 'Reset Kata Sandi',
     sendResetLink: 'Kirim Link Reset',
     backToLogin: 'Kembali ke Login',
-    signOutAccount: 'Keluar Akun / Ganti Email'
+    signOutAccount: 'Keluar Akun / Ganti Email',
+    driveRegisteredTitle: 'Data Pendaftar (Google Drive)',
+    driveRegisteredDesc: 'Data nama akun dan email yang berhasil mendaftar/login tersimpan rapi di Google Drive dalam format CSV.',
+    driveTotalUsers: 'Total Pendaftar Terdata',
+    driveFileSaved: 'File Tersimpan di Google Drive:',
+    driveNoUsers: 'Belum ada data pendaftar tercatat di Google Drive.',
+    driveViewUsersBtn: 'Cek Pendaftar (Google Drive)'
   },
   en: {
     appName: 'DailyCal', dash: 'Daily Journal', lead: 'Leaderboard', work: 'Workouts', rec: 'Weekly Meal Plan', anal: 'Family Analytics', ask: 'Ask AI', shop: 'Healthy Store',
@@ -245,6 +253,12 @@ const uiDict: Record<string, Record<string, string>> = {
     sendResetLink: 'Send Reset Link',
     backToLogin: 'Back to Login',
     signOutAccount: 'Sign Out / Switch Account',
+    driveRegisteredTitle: 'Registered Users (Google Drive)',
+    driveRegisteredDesc: 'Account names and emails of registered/logged-in users are automatically logged in Google Drive as a CSV file.',
+    driveTotalUsers: 'Total Registered Users',
+    driveFileSaved: 'File Saved in Google Drive:',
+    driveNoUsers: 'No registered user logs found in Google Drive yet.',
+    driveViewUsersBtn: 'Check Users (Google Drive)',
     weekTipHigh: 'Next Week Advice: Reduce late-night snacks & increase walking duration or light cardio.',
     weekEvalIdeal: 'Your weekly average calories are ideal and match your body\'s needs!',
     weekTipIdeal: 'Next Week Advice: Maintain this nutrition pattern and drink at least 2,000 ml water daily.',
@@ -731,6 +745,13 @@ export default function App() {
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
 
+  // Google Drive Registered Users State
+  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(() => localStorage.getItem('dailycal_gdrive_token'));
+  const [isDriveUsersModalOpen, setIsDriveUsersModalOpen] = useState(false);
+  const [driveUsersList, setDriveUsersList] = useState<{ total: number; entries: any[]; fileId?: string; webViewLink?: string }>({ total: 0, entries: [] });
+  const [isLoadingDriveUsers, setIsLoadingDriveUsers] = useState(false);
+  const [driveLogSuccessBadge, setDriveLogSuccessBadge] = useState<string | null>(null);
+
   // Manual Food & Drink Input State
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [manualFoodText, setManualFoodText] = useState('');
@@ -1203,6 +1224,40 @@ export default function App() {
     setProfileForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const triggerDriveLog = async (entry: { accountName: string; email: string; method: 'Google' | 'Email/Password' | 'Room Code'; familyCode?: string }, tokenOverride?: string | null) => {
+    const token = tokenOverride || googleAccessToken;
+    if (!token) {
+      console.log("ℹ️ Google Drive logging dilewati karena token OAuth belum tersedia.");
+      return;
+    }
+    try {
+      const res = await logUserToGoogleDrive(token, entry);
+      if (res.success) {
+        setDriveLogSuccessBadge(`Akun ${entry.accountName} tersimpan di Google Drive!`);
+        setTimeout(() => setDriveLogSuccessBadge(null), 5000);
+      }
+    } catch (err) {
+      console.warn("Drive logging background warning:", err);
+    }
+  };
+
+  const fetchDriveUsers = async () => {
+    if (!googleAccessToken) {
+      setIsDriveUsersModalOpen(true);
+      return;
+    }
+    setIsLoadingDriveUsers(true);
+    setIsDriveUsersModalOpen(true);
+    try {
+      const data = await getDriveRegisteredUsers(googleAccessToken);
+      setDriveUsersList(data);
+    } catch (e) {
+      console.warn("Failed to fetch drive users:", e);
+    } finally {
+      setIsLoadingDriveUsers(false);
+    }
+  };
+
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailInput.trim() || !passwordInput) {
@@ -1224,6 +1279,14 @@ export default function App() {
         localStorage.setItem('dailycal_family_code', localCode);
         localStorage.setItem('dailycal_account_email', cleanEmail);
         setIsAuthSubmitting(false);
+
+        // Catat ke Google Drive jika token tersedia
+        triggerDriveLog({
+          accountName: emailName || cleanEmail,
+          email: cleanEmail,
+          method: 'Email/Password',
+          familyCode: localCode
+        });
         return;
       }
 
@@ -1292,6 +1355,15 @@ export default function App() {
         setFamilyCode(userFamilyCode);
         localStorage.setItem('dailycal_family_code', userFamilyCode);
       }
+
+      // Catat ke Google Drive secara otomatis
+      const accountName = loggedUser.displayName || (loggedUser.email || cleanEmail).split('@')[0];
+      triggerDriveLog({
+        accountName,
+        email: loggedUser.email || cleanEmail,
+        method: 'Email/Password',
+        familyCode: userFamilyCode
+      });
     } catch (err: any) {
       console.error("Email sign-in error:", err);
       if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
@@ -1338,6 +1410,14 @@ export default function App() {
         localStorage.setItem('dailycal_family_code', localCode);
         localStorage.setItem('dailycal_account_email', cleanEmail);
         setIsAuthSubmitting(false);
+
+        // Catat ke Google Drive
+        triggerDriveLog({
+          accountName: displayNameInput.trim() || emailName || cleanEmail,
+          email: cleanEmail,
+          method: 'Email/Password',
+          familyCode: localCode
+        });
         return;
       }
 
@@ -1382,6 +1462,14 @@ export default function App() {
       setRoomPin(null);
       localStorage.setItem('dailycal_family_code', newFamilyCode);
       localStorage.removeItem('dailycal_room_pin');
+
+      // Catat akun pendaftar baru ke Google Drive
+      triggerDriveLog({
+        accountName: displayNameInput.trim() || rawName,
+        email: createdUser.email || cleanEmail,
+        method: 'Email/Password',
+        familyCode: newFamilyCode
+      });
     } catch (err: any) {
       console.error("Sign up error:", err);
       if (err.code === 'auth/email-already-in-use') {
@@ -1621,9 +1709,18 @@ export default function App() {
     setJoinError(null);
     try {
       const provider = new GoogleAuthProvider();
+      provider.addScope('https://www.googleapis.com/auth/drive.file');
       const result = await signInWithPopup(auth, provider);
       const gUser = result.user;
       setUser(gUser);
+
+      // Extract and save Google OAuth Access Token for Drive API
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const driveToken = credential?.accessToken || null;
+      if (driveToken) {
+        setGoogleAccessToken(driveToken);
+        localStorage.setItem('dailycal_gdrive_token', driveToken);
+      }
 
       const gEmailName = gUser.email ? gUser.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '') : `user_${gUser.uid.substring(0,6)}`;
       const googleFamilyCode = `Keluarga_${gEmailName}`;
@@ -1672,6 +1769,15 @@ export default function App() {
         setFamilyCode(googleFamilyCode);
         localStorage.setItem('dailycal_family_code', googleFamilyCode);
       }
+
+      // Catat otomatis ke Google Drive
+      const accountName = gUser.displayName || (gUser.email ? gUser.email.split('@')[0] : 'User');
+      triggerDriveLog({
+        accountName,
+        email: gUser.email || '-',
+        method: 'Google',
+        familyCode: googleFamilyCode
+      }, driveToken);
     } catch (err: any) {
       console.error("Google login error:", err);
       if (err.code !== 'auth/popup-closed-by-user') {
@@ -2535,6 +2641,9 @@ export default function App() {
             </div>
 
             <div className="p-4 border-t border-gray-100 space-y-2">
+              <button onClick={() => { fetchDriveUsers(); setIsSidebarOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-2xl transition-colors font-bold text-xs border border-emerald-200">
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600" /> {t('driveViewUsersBtn', language)}
+              </button>
               <button onClick={() => { setIsHistoryModalOpen(true); setIsSidebarOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-2xl transition-colors font-medium text-xs">
                 <Calendar className="w-4 h-4 text-gray-400" /> {t('viewHistory', language)}
               </button>
@@ -2546,6 +2655,14 @@ export default function App() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Banner Notifikasi Sukses Log Google Drive */}
+      {driveLogSuccessBadge && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-bounce">
+          <CheckCircle2 className="w-4 h-4 text-white" />
+          <span>{driveLogSuccessBadge}</span>
         </div>
       )}
 
@@ -3805,6 +3922,110 @@ export default function App() {
               <div className="flex gap-3">
                 <button onClick={() => setIsConfirmLeaveOpen(false)} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors">{t('cancel', language)}</button>
                 <button onClick={confirmLeaveFamily} className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors">{t('yesLeave', language)}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Data Pendaftar Google Drive */}
+        {isDriveUsersModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4">
+            <div className="bg-white w-full max-w-md rounded-3xl flex flex-col max-h-[90vh] shadow-2xl overflow-hidden animate-fade-in">
+              <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-emerald-50 to-green-50">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                    <FileSpreadsheet className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-800 text-sm leading-tight">{t('driveRegisteredTitle', language)}</h3>
+                    <p className="text-[11px] text-gray-500">DailyCal_Pendaftaran_User.csv</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsDriveUsersModalOpen(false)}
+                  className="p-1.5 hover:bg-white rounded-full text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-5 overflow-y-auto space-y-4 flex-1">
+                {/* Banner Statistik Singkat */}
+                <div className="bg-emerald-500 text-white p-4 rounded-2xl shadow-sm flex items-center justify-between">
+                  <div>
+                    <span className="text-xs text-emerald-100 font-medium block">{t('driveTotalUsers', language)}</span>
+                    <span className="text-2xl font-black">{driveUsersList.total} Orang</span>
+                  </div>
+                  <button 
+                    onClick={fetchDriveUsers} 
+                    disabled={isLoadingDriveUsers}
+                    className="p-2.5 bg-white/20 hover:bg-white/30 rounded-xl transition-colors flex items-center gap-1.5 text-xs font-bold"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isLoadingDriveUsers ? 'animate-spin' : ''}`} />
+                    <span>Muat Ulang</span>
+                  </button>
+                </div>
+
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 text-xs text-gray-600 space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-gray-700">
+                    <FolderKanban className="w-4 h-4 text-emerald-600" />
+                    <span>{t('driveFileSaved', language)}</span>
+                  </div>
+                  <p className="text-[11px] text-gray-500 font-mono">Google Drive / DailyCal_Pendaftaran_User.csv</p>
+                  <p className="text-[11px] text-gray-500 leading-relaxed">
+                    Setiap pendaftaran baru atau login akun otomatis dicatat tanpa menyertakan password demi menjaga privasi.
+                  </p>
+                </div>
+
+                {isLoadingDriveUsers ? (
+                  <div className="py-12 flex flex-col items-center justify-center text-gray-400 space-y-2">
+                    <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+                    <span className="text-xs font-medium">Mengambil data dari Google Drive...</span>
+                  </div>
+                ) : driveUsersList.entries.length === 0 ? (
+                  <div className="py-10 text-center text-gray-400 space-y-2">
+                    <FileSpreadsheet className="w-10 h-10 mx-auto text-gray-300" />
+                    <p className="text-xs font-medium">{t('driveNoUsers', language)}</p>
+                    <p className="text-[11px] text-gray-400">Data akan terisi secara otomatis ketika ada pengguna yang login atau mendaftar.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    <span className="text-xs font-bold text-gray-700 block">Riwayat Pendaftar Terakhir:</span>
+                    <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                      {driveUsersList.entries.map((u, idx) => (
+                        <div key={idx} className="p-3 bg-white border border-gray-100 rounded-xl shadow-xs flex items-center justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-xs text-gray-800 truncate capitalize">{u.name}</span>
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider ${u.method === 'Google' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                                {u.method}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-gray-500 truncate flex items-center gap-1 mt-0.5">
+                              <Mail className="w-3 h-3 shrink-0 text-gray-400" />
+                              <span className="truncate">{u.email}</span>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="text-[10px] text-gray-400 font-mono block">{u.time}</span>
+                            {u.family && u.family !== '-' && (
+                              <span className="text-[10px] text-emerald-600 font-medium truncate block max-w-[90px]">{u.family}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4 bg-gray-50 border-t border-gray-100">
+                <button 
+                  onClick={() => setIsDriveUsersModalOpen(false)}
+                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-colors"
+                >
+                  Tutup
+                </button>
               </div>
             </div>
           </div>

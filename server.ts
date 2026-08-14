@@ -550,6 +550,224 @@ app.post(["/api/ai-chat", "/ai-chat"], async (req, res) => {
   }
 });
 
+// 4. Google Drive User Registration Logging Route
+app.post(["/api/log-user", "/log-user"], async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null;
+    const { accountName, email, method, familyCode } = req.body || {};
+
+    if (!token) {
+      return res.status(401).json({ error: "Access token is required" });
+    }
+
+    const FILE_NAME = "DailyCal_Pendaftaran_User.csv";
+    const CSV_HEADER = "Waktu,Nama Akun,Email,Metode Login,Ruang Keluarga\n";
+
+    // 1. Search for existing file
+    const query = encodeURIComponent(`name = '${FILE_NAME}' and trashed = false`);
+    const searchRes = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!searchRes.ok) {
+      const errText = await searchRes.text();
+      return res.status(searchRes.status).json({ error: errText });
+    }
+
+    const searchData = await searchRes.json();
+    const existingFiles = searchData.files || [];
+
+    const now = new Date();
+    const formattedDate = now.toLocaleString("id-ID", {
+      timeZone: "Asia/Jakarta",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+
+    const sanitizeCsvField = (str: string = "") => {
+      const escaped = String(str).replace(/"/g, '""');
+      return `"${escaped}"`;
+    };
+
+    const newRow = `${sanitizeCsvField(formattedDate)},${sanitizeCsvField(accountName || "-")},${sanitizeCsvField(email || "-")},${sanitizeCsvField(method || "Email")},${sanitizeCsvField(familyCode || "-")}\n`;
+
+    if (existingFiles.length === 0) {
+      // Create new CSV file
+      const fullContent = CSV_HEADER + newRow;
+      const metadata = {
+        name: FILE_NAME,
+        mimeType: "text/csv",
+        description: "Daftar riwayat pendaftaran dan login pengguna aplikasi DailyCal",
+      };
+
+      const boundary = "-------314159265358979323846";
+      const delimiter = "\r\n--" + boundary + "\r\n";
+      const closeDelim = "\r\n--" + boundary + "--";
+
+      const multipartRequestBody =
+        delimiter +
+        "Content-Type: application/json\r\n\r\n" +
+        JSON.stringify(metadata) +
+        delimiter +
+        "Content-Type: text/csv\r\n\r\n" +
+        fullContent +
+        closeDelim;
+
+      const createRes = await fetch(
+        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": `multipart/related; boundary=${boundary}`,
+          },
+          body: multipartRequestBody,
+        }
+      );
+
+      if (!createRes.ok) {
+        const createErr = await createRes.text();
+        return res.status(createRes.status).json({ error: createErr });
+      }
+
+      const fileData = await createRes.json();
+      return res.json({ success: true, fileId: fileData.id, created: true });
+    } else {
+      // Append to existing file
+      const fileId = existingFiles[0].id;
+      const downloadRes = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      let existingContent = "";
+      if (downloadRes.ok) {
+        existingContent = await downloadRes.text();
+      }
+
+      let updatedContent = existingContent;
+      if (!updatedContent.trim().startsWith("Waktu")) {
+        updatedContent = CSV_HEADER + updatedContent;
+      }
+      if (!updatedContent.endsWith("\n") && updatedContent.length > 0) {
+        updatedContent += "\n";
+      }
+      updatedContent += newRow;
+
+      const updateRes = await fetch(
+        `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "text/csv",
+          },
+          body: updatedContent,
+        }
+      );
+
+      if (!updateRes.ok) {
+        const updateErr = await updateRes.text();
+        return res.status(updateRes.status).json({ error: updateErr });
+      }
+
+      return res.json({ success: true, fileId, appended: true });
+    }
+  } catch (error: any) {
+    console.error("Error in /api/log-user:", error);
+    return res.status(500).json({ error: error?.message || "Gagal mencatat data ke Google Drive" });
+  }
+});
+
+// 5. Google Drive View Registered Users Route
+app.get(["/api/registered-users", "/registered-users"], async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null;
+
+    if (!token) {
+      return res.status(401).json({ error: "Access token is required" });
+    }
+
+    const FILE_NAME = "DailyCal_Pendaftaran_User.csv";
+    const query = encodeURIComponent(`name = '${FILE_NAME}' and trashed = false`);
+    const searchRes = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,webViewLink)`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!searchRes.ok) {
+      return res.status(searchRes.status).json({ error: "Failed to search Drive files" });
+    }
+
+    const searchData = await searchRes.json();
+    const existingFiles = searchData.files || [];
+
+    if (existingFiles.length === 0) {
+      return res.json({ total: 0, entries: [], fileId: null, webViewLink: null });
+    }
+
+    const file = existingFiles[0];
+    const downloadRes = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (!downloadRes.ok) {
+      return res.json({ total: 0, entries: [], fileId: file.id, webViewLink: file.webViewLink });
+    }
+
+    const content = await downloadRes.text();
+    const lines = content.split("\n").filter((l) => l.trim().length > 0);
+
+    const entries = [];
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      const match = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+      const cleanCols = (match || line.split(",")).map((c) => c.replace(/^"|"$/g, "").trim());
+      if (cleanCols.length >= 2) {
+        entries.push({
+          time: cleanCols[0] || "-",
+          name: cleanCols[1] || "-",
+          email: cleanCols[2] || "-",
+          method: cleanCols[3] || "-",
+          family: cleanCols[4] || "-",
+        });
+      }
+    }
+
+    return res.json({
+      total: entries.length,
+      entries: entries.reverse(),
+      fileId: file.id,
+      webViewLink: file.webViewLink,
+    });
+  } catch (error: any) {
+    console.error("Error in /api/registered-users:", error);
+    return res.status(500).json({ error: error?.message || "Failed to fetch Drive users" });
+  }
+});
+
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");
