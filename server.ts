@@ -1,4 +1,3 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import express from "express";
 import path from "path";
 
@@ -18,24 +17,51 @@ app.use((req, res, next) => {
   next();
 });
 
-// Lazy get Gemini client
-function getGenAI() {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY belum dikonfigurasi. Pastikan GEMINI_API_KEY sudah ditambahkan di Vercel Settings -> Environment Variables.");
+// Helper to safely parse JSON response from Groq AI models
+function parseNutritionJson(rawContent: string) {
+  let content = rawContent.trim();
+  // Strip markdown code fences if present (```json ... ``` or ``` ...)
+  content = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+
+  let parsed: any = null;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    const match = content.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        parsed = JSON.parse(match[0]);
+      } catch (err) {
+        console.warn("Regex JSON match parse failed:", err);
+      }
+    }
   }
-  return new GoogleGenAI({
-    apiKey,
-    httpOptions: {
-      headers: {
-        'User-Agent': 'aistudio-build',
-      },
-    },
-  });
+
+  if (!parsed || typeof parsed !== "object") {
+    throw new Error("Gagal membaca format data nutrisi dari Groq AI.");
+  }
+
+  return {
+    name: String(parsed.name || "Makanan/Minuman").trim(),
+    calories: Math.max(0, Math.round(Number(parsed.calories) || 0)),
+    protein: Math.max(0, Math.round(Number(parsed.protein) || 0)),
+    carbs: Math.max(0, Math.round(Number(parsed.carbs) || 0)),
+    fat: Math.max(0, Math.round(Number(parsed.fat) || 0)),
+    healthTip: String(
+      parsed.healthTip ||
+      "Porsi makanan seimbang. Pastikan mencukupi kebutuhan cairan air putih harian Anda."
+    ).trim(),
+    isFood: parsed.isFood !== false,
+  };
 }
 
 async function callGroqChat(history: any[], message: string, systemInstruction: string, groqApiKey: string) {
-  const models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"];
+  const models = [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+    "mixtral-8x7b-32768",
+    "gemma2-9b-it"
+  ];
   const messages = [
     { role: "system", content: systemInstruction },
     ...(history || []).map((msg: any) => ({
@@ -79,7 +105,12 @@ async function callGroqChat(history: any[], message: string, systemInstruction: 
 }
 
 async function callGroqNutritionText(text: string, groqApiKey: string) {
-  const models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"];
+  const models = [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+    "mixtral-8x7b-32768",
+    "gemma2-9b-it"
+  ];
   const promptText = `Anda adalah ahli gizi dan nutrisi profesional. Analisis deskripsi makanan/minuman berikut dan estimasi kandungan gizinya secara akurat:
 "${text}"
 
@@ -92,7 +123,7 @@ Tentukan:
 6. Saran kesehatan & nutrisi singkat (1-2 kalimat bermanfaat).
 7. isFood: true jika merupakan makanan/minuman yang valid untuk dikonsumsi, false jika bukan.
 
-Kembalikan HANYA format JSON valid tanpa format markdown atau teks lain:
+Kembalikan HANYA format JSON valid tanpa teks lain:
 {
   "name": "Nasi Goreng Spesial Telur",
   "calories": 380,
@@ -127,11 +158,7 @@ Kembalikan HANYA format JSON valid tanpa format markdown atau teks lain:
 
       const data = await res.json();
       const content = data.choices?.[0]?.message?.content || "";
-      const match = content.match(/\{[\s\S]*\}/);
-      if (match) {
-        return JSON.parse(match[0]);
-      }
-      return JSON.parse(content);
+      return parseNutritionJson(content);
     } catch (err: any) {
       console.warn(`Groq text model ${model} failed:`, err?.message);
       lastErr = err;
@@ -142,11 +169,13 @@ Kembalikan HANYA format JSON valid tanpa format markdown atau teks lain:
 
 async function getGroqVisionModels(groqApiKey: string): Promise<string[]> {
   const fallbackModels = [
+    "llama-3.2-11b-vision-preview",
+    "llama-3.2-90b-vision-preview",
     "llama-3.2-11b-vision-instruct",
     "llama-3.2-90b-vision-instruct",
-    "qwen/qwen3.6-27b",
     "meta-llama/llama-4-scout-17b-16e-instruct",
     "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "qwen/qwen3.6-27b",
     "llama-3.2-11b-vision",
     "llama-3.2-90b-vision"
   ];
@@ -220,11 +249,7 @@ async function callGroqVision(imageBase64: string, groqApiKey: string) {
 
       const data = await res.json();
       const content = data.choices?.[0]?.message?.content || "";
-      const match = content.match(/\{[\s\S]*\}/);
-      if (match) {
-        return JSON.parse(match[0]);
-      }
-      return JSON.parse(content);
+      return parseNutritionJson(content);
     } catch (err: any) {
       console.warn(`Groq vision model ${model} failed:`, err?.message);
       allErrors.push(err?.message || String(err));
@@ -233,131 +258,32 @@ async function callGroqVision(imageBase64: string, groqApiKey: string) {
   throw new Error(allErrors.slice(0, 2).join(" | "));
 }
 
-// 1. Food Image Analysis API Route
+// 1. Food Image Analysis API Route (Exclusively Groq Vision)
 app.post(["/api/analyze-food", "/analyze-food"], async (req, res) => {
-  let groqErrorDetail = "";
-
   try {
     const { imageBase64 } = req.body || {};
     if (!imageBase64) {
       return res.status(400).json({ error: "Image data is required" });
     }
 
-    const geminiKey = process.env.GEMINI_API_KEY;
     const groqKey = process.env.GROQ_API_KEY;
-
-    if (!geminiKey && !groqKey) {
+    if (!groqKey) {
       return res.status(400).json({
-        error: "GROQ_API_KEY atau GEMINI_API_KEY belum dipasang. Silakan tambahkan di Vercel Settings -> Environment Variables."
+        error: "GROQ_API_KEY belum dipasang. Silakan tambahkan GROQ_API_KEY di Environment Variables (dapatkan gratis di https://console.groq.com/keys)."
       });
     }
 
-    if (groqKey) {
-      try {
-        const parsed = await callGroqVision(imageBase64, groqKey);
-        return res.json(parsed);
-      } catch (groqErr: any) {
-        groqErrorDetail = groqErr?.message || String(groqErr);
-        console.warn("Groq vision failed, trying Gemini if key available:", groqErrorDetail);
-      }
-    }
-
-    if (geminiKey) {
-      const ai = new GoogleGenAI({ apiKey: geminiKey });
-      const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-
-      const modelsToTry = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"];
-      let response: any = null;
-      let lastErr: any = null;
-
-      for (const model of modelsToTry) {
-        try {
-          response = await ai.models.generateContent({
-            model,
-            contents: [
-              {
-                role: "user",
-                parts: [
-                  {
-                    text: "Analisis gambar ini. Apakah ini gambar makanan/minuman? Jika ya, estimasi nama (Indonesia), kalori(kkal), protein(g), karbohidrat(g), lemak(g), dan berikan 1-2 kalimat saran kesehatan & nutrisi singkat (healthTip) yang relevan. Jika bukan makanan/minuman, atur isFood menjadi false.",
-                  },
-                  {
-                    inlineData: {
-                      mimeType: "image/jpeg",
-                      data: cleanBase64,
-                    },
-                  },
-                ],
-              },
-            ],
-            config: {
-              responseMimeType: "application/json",
-              responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                  name: { type: Type.STRING },
-                  calories: { type: Type.INTEGER },
-                  protein: { type: Type.INTEGER },
-                  carbs: { type: Type.INTEGER },
-                  fat: { type: Type.INTEGER },
-                  healthTip: { type: Type.STRING },
-                  isFood: { type: Type.BOOLEAN },
-                },
-                required: ["name", "calories", "protein", "carbs", "fat", "isFood"],
-              },
-            },
-          });
-          if (response) break;
-        } catch (e: any) {
-          console.warn(`Model ${model} failed in analyze-food:`, e?.message);
-          lastErr = e;
-        }
-      }
-
-      if (response?.text) {
-        const parsed = JSON.parse(response.text);
-        return res.json(parsed);
-      }
-
-      const errStr = typeof lastErr === "string" ? lastErr : JSON.stringify(lastErr || {}) + " " + (lastErr?.message || "");
-      if (errStr.includes("RESOURCE_EXHAUSTED") || errStr.includes("Quota exceeded") || errStr.includes("429") || lastErr?.status === "RESOURCE_EXHAUSTED" || lastErr?.code === 429) {
-        if (groqKey) {
-          return res.status(400).json({
-            error: `⚠️ Analisis foto dengan Groq AI gagal (${groqErrorDetail}). Dan kuota Gemini AI juga habis.`
-          });
-        }
-        return res.status(429).json({
-          error: "⚠️ Batas kuota gratis Gemini AI terlampaui. Silakan REDEPLOY project Anda di Vercel setelah memasukkan GROQ_API_KEY."
-        });
-      }
-      throw lastErr || new Error("Gagal memproses gambar dengan Gemini AI");
-    }
-
-    if (groqErrorDetail) {
-      return res.status(400).json({
-        error: `⚠️ Groq Vision error: ${groqErrorDetail}`
-      });
-    }
-
-    return res.status(500).json({ error: "No available AI provider." });
+    const parsed = await callGroqVision(imageBase64, groqKey);
+    return res.json(parsed);
   } catch (error: any) {
     console.error("Error in /api/analyze-food:", error);
-    if (groqErrorDetail) {
-      return res.status(400).json({
-        error: `⚠️ Analisis foto Groq AI gagal: ${groqErrorDetail}`
-      });
-    }
-    const errStr = typeof error === "string" ? error : JSON.stringify(error || {}) + " " + (error?.message || "");
-    if (errStr.includes("RESOURCE_EXHAUSTED") || errStr.includes("Quota exceeded") || errStr.includes("429") || error?.status === "RESOURCE_EXHAUSTED" || error?.code === 429) {
-      return res.status(429).json({
-        error: "⚠️ Batas kuota gratis Gemini AI terlampaui. Silakan tunggu 30 - 60 detik atau tambahkan GROQ_API_KEY di Vercel."
-      });
-    }
-    return res.status(500).json({ error: error?.message || "Gagal menganalisis gambar makanan." });
+    return res.status(500).json({
+      error: `⚠️ Analisis foto dengan Groq AI gagal: ${error?.message || "Terjadi kendala jaringan ke Groq AI."}`
+    });
   }
 });
 
-// 2. Food Text Nutrition Analysis & Calculator API Route
+// 2. Food Text Nutrition Analysis & Calculator API Route (Exclusively Groq AI)
 app.post(["/api/analyze-food-text", "/analyze-food-text"], async (req, res) => {
   try {
     const { text } = req.body || {};
@@ -365,83 +291,22 @@ app.post(["/api/analyze-food-text", "/analyze-food-text"], async (req, res) => {
       return res.status(400).json({ error: "Deskripsi makanan atau minuman harus diisi." });
     }
 
-    const geminiKey = process.env.GEMINI_API_KEY;
     const groqKey = process.env.GROQ_API_KEY;
-
-    if (!geminiKey && !groqKey) {
+    if (!groqKey) {
       return res.status(400).json({
-        error: "GROQ_API_KEY atau GEMINI_API_KEY belum dipasang. Silakan tambahkan di Vercel Settings -> Environment Variables."
+        error: "GROQ_API_KEY belum dipasang. Silakan tambahkan GROQ_API_KEY di Environment Variables (gratis di https://console.groq.com/keys)."
       });
     }
 
-    if (groqKey) {
-      try {
-        const parsed = await callGroqNutritionText(text.trim(), groqKey);
-        return res.json(parsed);
-      } catch (groqErr: any) {
-        console.warn("Groq text nutrition failed, trying Gemini:", groqErr?.message);
-      }
-    }
-
-    if (geminiKey) {
-      const ai = new GoogleGenAI({ apiKey: geminiKey });
-      const prompt = `Analisis teks makanan/minuman ini: "${text.trim()}". Estimasi nama bersih (Bahasa Indonesia), kalori (kkal), protein (g), karbohidrat (g), lemak (g), dan saran kesehatan singkat (healthTip). Jika teks bukan nama/deskripsi makanan atau minuman yang dapat dimakan/diminum, atur isFood menjadi false.`;
-
-      const modelsToTry = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"];
-      let response: any = null;
-      let lastErr: any = null;
-
-      for (const model of modelsToTry) {
-        try {
-          response = await ai.models.generateContent({
-            model,
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            config: {
-              responseMimeType: "application/json",
-              responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                  name: { type: Type.STRING },
-                  calories: { type: Type.INTEGER },
-                  protein: { type: Type.INTEGER },
-                  carbs: { type: Type.INTEGER },
-                  fat: { type: Type.INTEGER },
-                  healthTip: { type: Type.STRING },
-                  isFood: { type: Type.BOOLEAN },
-                },
-                required: ["name", "calories", "protein", "carbs", "fat", "isFood"],
-              },
-            },
-          });
-          if (response) break;
-        } catch (e: any) {
-          console.warn(`Model ${model} failed in analyze-food-text:`, e?.message);
-          lastErr = e;
-        }
-      }
-
-      if (response?.text) {
-        const parsed = JSON.parse(response.text);
-        return res.json(parsed);
-      }
-
-      const errStr = typeof lastErr === "string" ? lastErr : JSON.stringify(lastErr || {}) + " " + (lastErr?.message || "");
-      if (errStr.includes("RESOURCE_EXHAUSTED") || errStr.includes("Quota exceeded") || errStr.includes("429")) {
-        return res.status(429).json({
-          error: "⚠️ Batas kuota gratis Gemini AI terlampaui. Silakan tunggu 30-60 detik atau pasang GROQ_API_KEY."
-        });
-      }
-      throw lastErr || new Error("Gagal menghitung nutrisi dengan Gemini AI");
-    }
-
-    return res.status(500).json({ error: "No available AI provider." });
+    const parsed = await callGroqNutritionText(text.trim(), groqKey);
+    return res.json(parsed);
   } catch (error: any) {
     console.error("Error in /api/analyze-food-text:", error);
-    return res.status(500).json({ error: error?.message || "Gagal menghitung nutrisi makanan." });
+    return res.status(500).json({ error: error?.message || "Gagal menghitung nutrisi makanan dengan Groq AI." });
   }
 });
 
-// 3. AI Health Chat API Route
+// 3. AI Health Chat API Route (Exclusively Groq AI)
 app.post(["/api/ai-chat", "/ai-chat"], async (req, res) => {
   try {
     const { history, message, language = "id" } = req.body || {};
@@ -449,12 +314,10 @@ app.post(["/api/ai-chat", "/ai-chat"], async (req, res) => {
       return res.status(400).json({ error: "Message is required" });
     }
 
-    const geminiKey = process.env.GEMINI_API_KEY;
     const groqKey = process.env.GROQ_API_KEY;
-
-    if (!geminiKey && !groqKey) {
+    if (!groqKey) {
       return res.json({
-        text: "⚠️ **API Key AI Belum Dipasang.**\n\nSilakan pasang `GROQ_API_KEY` (gratis di https://console.groq.com/keys) atau `GEMINI_API_KEY` di Environment Variables."
+        text: "⚠️ **GROQ_API_KEY Belum Dipasang.**\n\nSilakan pasang `GROQ_API_KEY` (gratis di https://console.groq.com/keys) di Environment Variables agar Jarvis AI dapat langsung membalas pertanyaan Anda."
       });
     }
 
@@ -474,79 +337,11 @@ app.post(["/api/ai-chat", "/ai-chat"], async (req, res) => {
     const targetLang = langMap[language] || "Indonesia";
     const systemInstruction = `Anda adalah Jarvis, asisten kesehatan AI yang ramah, informatif, dan pintar. Jawab dengan bahasa ${targetLang} yang santai, ringkas (maksimal 3 paragraf), dan fokus pada gaya hidup sehat, nutrisi, resep diet, dan olahraga.`;
 
-    if (groqKey && !geminiKey) {
-      const text = await callGroqChat(history, message, systemInstruction, groqKey);
-      return res.json({ text });
-    }
-
-    if (geminiKey) {
-      const ai = new GoogleGenAI({ apiKey: geminiKey });
-      const formattedContents = (history || []).map((msg: any) => ({
-        role: msg.role === "model" ? "model" : "user",
-        parts: [{ text: msg.text }],
-      }));
-
-      formattedContents.push({
-        role: "user",
-        parts: [{ text: message }],
-      });
-
-      const modelsToTry = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"];
-      let response: any = null;
-      let lastErr: any = null;
-
-      for (const model of modelsToTry) {
-        try {
-          response = await ai.models.generateContent({
-            model,
-            contents: formattedContents,
-            config: { systemInstruction },
-          });
-          if (response) break;
-        } catch (e: any) {
-          console.warn(`Model ${model} failed in ai-chat:`, e?.message);
-          lastErr = e;
-        }
-      }
-
-      if (response?.text) {
-        return res.json({ text: response.text });
-      }
-
-      if (groqKey) {
-        console.warn("Gemini chat failed or rate limited. Falling back to Groq AI...");
-        try {
-          const text = await callGroqChat(history, message, systemInstruction, groqKey);
-          return res.json({ text });
-        } catch (groqErr) {
-          console.error("Groq chat fallback failed:", groqErr);
-        }
-      }
-
-      const errStr = typeof lastErr === "string" ? lastErr : JSON.stringify(lastErr || {}) + " " + (lastErr?.message || "");
-      if (errStr.includes("RESOURCE_EXHAUSTED") || errStr.includes("Quota exceeded") || errStr.includes("429") || lastErr?.status === "RESOURCE_EXHAUSTED" || lastErr?.code === 429) {
-        return res.json({
-          text: "⏳ **Batas Kuota Penggunaan Gemini AI Terlampaui**\n\nUntuk respon AI tanpa hambatan, Anda dapat memasang **GROQ_API_KEY** (gratis di https://console.groq.com/keys) di Environment Variables Vercel.\n\nAtau tunggu 30-60 detik."
-        });
-      }
-      throw lastErr || new Error("Gagal mendapatkan balasan dari Gemini AI");
-    }
-
-    if (groqKey) {
-      const text = await callGroqChat(history, message, systemInstruction, groqKey);
-      return res.json({ text });
-    }
-
-    return res.status(500).json({ error: "No available AI provider." });
+    const text = await callGroqChat(history, message, systemInstruction, groqKey);
+    return res.json({ text });
   } catch (error: any) {
     console.error("Error in /api/ai-chat:", error);
-    const errStr = typeof error === "string" ? error : JSON.stringify(error || {}) + " " + (error?.message || "");
-    if (errStr.includes("RESOURCE_EXHAUSTED") || errStr.includes("Quota exceeded") || errStr.includes("429") || error?.status === "RESOURCE_EXHAUSTED" || error?.code === 429) {
-      return res.json({
-        text: "⏳ **Batas Kuota Penggunaan Gemini AI Terlampaui**\n\nAnda dapat memasang **GROQ_API_KEY** gratis di Vercel agar Jarvis AI selalu merespon tanpa terkena rate limit."
-      });
-    }
-    return res.status(500).json({ error: error?.message || "Gagal menghubungi Jarvis AI." });
+    return res.status(500).json({ error: error?.message || "Gagal menghubungi Jarvis AI melalui Groq API." });
   }
 });
 
