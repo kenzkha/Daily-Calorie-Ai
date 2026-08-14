@@ -5,10 +5,15 @@ import {
   GlassWater, Minus, Image as ImageIcon, Calendar, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, 
   Users, KeyRound, LogOut, ShieldCheck, Menu, Dumbbell, BookOpen, 
   Trophy, Home, Crown, PlayCircle, Timer, Sparkles, ChefHat, BarChart3, Send, Heart, ExternalLink,
-  Moon, Sun, Globe, Bot, Lock, LogIn, ShieldAlert, Check
+  Moon, Sun, Globe, Bot, Lock, LogIn, ShieldAlert, Check,
+  Mail, FileText, Coffee, Utensils, Eye, EyeOff, UserCheck, RefreshCw, Info, HelpCircle, Smartphone, PenLine
 } from 'lucide-react';
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, Auth } from 'firebase/auth';
+import { 
+  getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, 
+  signInWithPopup, signOut, Auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, 
+  sendPasswordResetEmail, updateProfile 
+} from 'firebase/auth';
 import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, getDoc, getDocs, Firestore } from 'firebase/firestore';
 
 // --- TYPES ---
@@ -156,7 +161,33 @@ const uiDict: Record<string, Record<string, string>> = {
     tipHighProtein: 'Sangat kaya protein! Bagus untuk pembentukan jaringan otot, stamina harian, dan menjaga rasa kenyang lebih lama.',
     tipHighCarbs: 'Asupan karbohidrat tinggi sebagai bahan bakar energi. Cocok dikonsumsi sebelum atau sesudah beraktivitas aktif.',
     tipBalanced: 'Porsi nutrisi seimbang! Pastikan pemenuhan kebutuhan hidrasi air putih harian Anda terpenuhi.',
-    familySuggestions: 'Saran Nama Keluarga Unik (Ketuk untuk pilih):', selectCalendarDate: 'Pilih Tanggal Jurnal'
+    familySuggestions: 'Saran Nama Keluarga Unik (Ketuk untuk pilih):', selectCalendarDate: 'Pilih Tanggal Jurnal',
+    manualInput: 'Ketik Manual & Hitung Nutrisi',
+    manualFoodTitle: 'Input Makanan / Minuman Manual',
+    manualFoodDesc: 'Ketik nama makanan atau minuman beserta porsinya, lalu biarkan AI menghitung nutrisinya secara otomatis.',
+    calcNutritionBtn: 'Hitung Nutrisi (AI)',
+    calculatingNutrition: 'Menghitung nutrisi...',
+    foodCategory: 'Kategori',
+    mainMeal: 'Makanan Utama',
+    beverage: 'Minuman Sehat / Kopi',
+    snack: 'Camilan / Snack',
+    foodOrDrinkPlaceholder: 'Contoh: 1 porsi Nasi Goreng Telur + Kerupuk, atau 1 gelas Es Kopi Susu Aren 300ml',
+    quickSuggestions: 'Pilihan Populer (Ketuk Cepat):',
+    emailLoginTab: 'Masuk Email',
+    emailRegisterTab: 'Daftar Akun',
+    roomCodeTab: 'Kode Ruang',
+    emailLabel: 'Alamat Email',
+    passwordLabel: 'Kata Sandi / Password',
+    confirmPasswordLabel: 'Konfirmasi Kata Sandi',
+    fullNameLabel: 'Nama Lengkap / Panggilan',
+    forgotPassword: 'Lupa Password?',
+    loginWithEmailBtn: 'Masuk ke Akun',
+    registerWithEmailBtn: 'Daftar & Mulai Sinkronisasi',
+    crossDeviceTip: 'Dengan Akun Email, jurnal & profil Anda tersimpan aman di cloud dan tidak akan hilang saat berganti HP/perangkat.',
+    resetPasswordTitle: 'Reset Kata Sandi',
+    sendResetLink: 'Kirim Link Reset',
+    backToLogin: 'Kembali ke Login',
+    signOutAccount: 'Keluar Akun / Ganti Email'
   },
   en: {
     appName: 'DailyCal', dash: 'Daily Journal', lead: 'Leaderboard', work: 'Workouts', rec: 'Weekly Meal Plan', anal: 'Family Analytics', ask: 'Ask AI', shop: 'Healthy Store',
@@ -188,6 +219,32 @@ const uiDict: Record<string, Record<string, string>> = {
     weekEvalLow: 'Average calorie intake over the past 7 days is below safe threshold.',
     weekTipLow: 'Next Week Advice: Increase complex carbs & healthy protein at breakfast and lunch.',
     weekEvalHigh: 'Weekly average calories slightly exceed daily target limit.',
+    manualInput: 'Manual Input & Calculate Nutrition',
+    manualFoodTitle: 'Manual Food & Drink Input',
+    manualFoodDesc: 'Type the name and portion of your food or drink, and let AI calculate its nutrients automatically.',
+    calcNutritionBtn: 'Calculate Nutrition (AI)',
+    calculatingNutrition: 'Calculating nutrition...',
+    foodCategory: 'Category',
+    mainMeal: 'Main Meal',
+    beverage: 'Healthy Beverage / Coffee',
+    snack: 'Snack / Bite',
+    foodOrDrinkPlaceholder: 'Example: 1 bowl of Chicken Noodle Soup with egg, or 1 cup of Iced Cappuccino 300ml',
+    quickSuggestions: 'Popular Suggestions (Quick Tap):',
+    emailLoginTab: 'Email Login',
+    emailRegisterTab: 'Register Account',
+    roomCodeTab: 'Room Code',
+    emailLabel: 'Email Address',
+    passwordLabel: 'Password',
+    confirmPasswordLabel: 'Confirm Password',
+    fullNameLabel: 'Full Name / Nickname',
+    forgotPassword: 'Forgot Password?',
+    loginWithEmailBtn: 'Sign In to Account',
+    registerWithEmailBtn: 'Register & Start Syncing',
+    crossDeviceTip: 'With an Email Account, your journals & profiles are securely saved to the cloud and synced across devices.',
+    resetPasswordTitle: 'Reset Password',
+    sendResetLink: 'Send Reset Link',
+    backToLogin: 'Back to Login',
+    signOutAccount: 'Sign Out / Switch Account',
     weekTipHigh: 'Next Week Advice: Reduce late-night snacks & increase walking duration or light cardio.',
     weekEvalIdeal: 'Your weekly average calories are ideal and match your body\'s needs!',
     weekTipIdeal: 'Next Week Advice: Maintain this nutrition pattern and drink at least 2,000 ml water daily.',
@@ -645,18 +702,50 @@ export default function App() {
     setIsLangMenuOpen(false);
   };
 
-  // Family Code Auth State
+  // Family Code & Email Auth State
   const [familyCode, setFamilyCode] = useState<string | null>(() => {
     return localStorage.getItem('dailycal_family_code') || null;
   });
   const [roomPin, setRoomPin] = useState<string | null>(() => {
     return localStorage.getItem('dailycal_room_pin') || null;
   });
+  const [accountEmail, setAccountEmail] = useState<string | null>(() => {
+    return localStorage.getItem('dailycal_account_email') || null;
+  });
+  const [authTab, setAuthTab] = useState<'email_login' | 'email_register' | 'family_code'>('email_login');
+  const [emailInput, setEmailInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
+  const [displayNameInput, setDisplayNameInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authSuccess, setAuthSuccess] = useState<string | null>(null);
+  const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+
   const [isCheckingFamily, setIsCheckingFamily] = useState(true);
   const [codeInput, setCodeInput] = useState('');
   const [pinInput, setPinInput] = useState('');
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
+
+  // Manual Food & Drink Input State
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [manualFoodText, setManualFoodText] = useState('');
+  const [manualFoodCategory, setManualFoodCategory] = useState<'food' | 'drink' | 'snack'>('food');
+  const [isCalculatingNutrition, setIsCalculatingNutrition] = useState(false);
+  const [manualNutritionCalculated, setManualNutritionCalculated] = useState(false);
+  const [manualCalcError, setManualCalcError] = useState<string | null>(null);
+  const [manualForm, setManualForm] = useState({
+    name: '',
+    calories: '',
+    protein: '',
+    carbs: '',
+    fat: '',
+    healthTip: ''
+  });
 
   // Data Mentah 
   const [allLogsRaw, setAllLogsRaw] = useState<FoodLog[]>(() => {
@@ -1114,6 +1203,338 @@ export default function App() {
     setProfileForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailInput.trim() || !passwordInput) {
+      setAuthError("Harap masukkan alamat email dan kata sandi.");
+      return;
+    }
+    setIsAuthSubmitting(true);
+    setAuthError(null);
+    setAuthSuccess(null);
+
+    const cleanEmail = emailInput.trim();
+
+    try {
+      if (!auth) {
+        const emailName = cleanEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+        const localCode = `Keluarga_${emailName}`;
+        setFamilyCode(localCode);
+        setAccountEmail(cleanEmail);
+        localStorage.setItem('dailycal_family_code', localCode);
+        localStorage.setItem('dailycal_account_email', cleanEmail);
+        setIsAuthSubmitting(false);
+        return;
+      }
+
+      const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, passwordInput);
+      const loggedUser = userCredential.user;
+      setUser(loggedUser);
+      setAccountEmail(loggedUser.email || cleanEmail);
+      localStorage.setItem('dailycal_account_email', loggedUser.email || cleanEmail);
+
+      let userFamilyCode = '';
+      let userPin: string | null = null;
+
+      if (db) {
+        const accountRef = doc(db, 'artifacts', appId, 'users', loggedUser.uid, 'settings', 'account');
+        const accountSnap = await getDoc(accountRef);
+
+        if (accountSnap.exists() && accountSnap.data().familyCode) {
+          userFamilyCode = accountSnap.data().familyCode;
+          userPin = accountSnap.data().roomPin || null;
+        } else {
+          const emailName = (loggedUser.email || cleanEmail).split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+          userFamilyCode = `Keluarga_${emailName}`;
+          await setDoc(accountRef, {
+            familyCode: userFamilyCode,
+            roomPin: null,
+            email: loggedUser.email || cleanEmail,
+            updatedAt: Date.now()
+          }, { merge: true });
+        }
+
+        const safeCode = userFamilyCode.replace(/[^a-zA-Z0-9]/g, '_');
+        const metaRef = doc(db, 'artifacts', appId, 'public', 'data', `family_${safeCode}_meta`, 'info');
+        const metaSnap = await getDoc(metaRef);
+        if (!metaSnap.exists()) {
+          await setDoc(metaRef, {
+            familyCode: userFamilyCode,
+            pin: userPin || null,
+            ownerUid: loggedUser.uid,
+            ownerEmail: loggedUser.email || cleanEmail,
+            createdAt: Date.now()
+          });
+        }
+
+        const profilesRef = collection(db, 'artifacts', appId, 'public', 'data', `family_${safeCode}_profiles`);
+        const profilesSnap = await getDocs(profilesRef);
+        const loadedProfiles: Profile[] = [];
+        profilesSnap.forEach(d => loadedProfiles.push({ id: d.id, ...d.data() } as Profile));
+
+        if (loadedProfiles.length > 0) {
+          setProfiles(loadedProfiles);
+          localStorage.setItem('dailycal_profiles', JSON.stringify(loadedProfiles));
+          setActiveProfileId(loadedProfiles[0].id);
+        } else {
+          setProfiles([]);
+          localStorage.removeItem('dailycal_profiles');
+        }
+
+        setFamilyCode(userFamilyCode);
+        setRoomPin(userPin);
+        localStorage.setItem('dailycal_family_code', userFamilyCode);
+        if (userPin) localStorage.setItem('dailycal_room_pin', userPin);
+        else localStorage.removeItem('dailycal_room_pin');
+      } else {
+        const emailName = (loggedUser.email || cleanEmail).split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+        userFamilyCode = `Keluarga_${emailName}`;
+        setFamilyCode(userFamilyCode);
+        localStorage.setItem('dailycal_family_code', userFamilyCode);
+      }
+    } catch (err: any) {
+      console.error("Email sign-in error:", err);
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+        setAuthError("Email atau kata sandi tidak cocok. Jika belum punya akun, silakan klik tab 'Daftar Akun'.");
+      } else if (err.code === 'auth/wrong-password') {
+        setAuthError("Kata sandi salah. Silakan coba lagi atau gunakan opsi Lupa Password.");
+      } else if (err.code === 'auth/invalid-email') {
+        setAuthError("Format alamat email tidak valid.");
+      } else if (err.code === 'auth/too-many-requests') {
+        setAuthError("Terlalu banyak percobaan gagal. Silakan tunggu 1 menit lalu coba lagi.");
+      } else {
+        setAuthError(err.message || "Gagal masuk. Silakan periksa koneksi internet.");
+      }
+    } finally {
+      setIsAuthSubmitting(false);
+    }
+  };
+
+  const handleEmailSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailInput.trim() || !passwordInput) {
+      setAuthError("Harap lengkapi email dan kata sandi.");
+      return;
+    }
+    if (passwordInput.length < 6) {
+      setAuthError("Kata sandi minimal 6 karakter demi keamanan.");
+      return;
+    }
+    if (passwordInput !== confirmPasswordInput) {
+      setAuthError("Konfirmasi kata sandi tidak sama. Silakan periksa kembali.");
+      return;
+    }
+
+    setIsAuthSubmitting(true);
+    setAuthError(null);
+    const cleanEmail = emailInput.trim();
+
+    try {
+      if (!auth) {
+        const emailName = cleanEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+        const localCode = `Keluarga_${emailName}`;
+        setFamilyCode(localCode);
+        setAccountEmail(cleanEmail);
+        localStorage.setItem('dailycal_family_code', localCode);
+        localStorage.setItem('dailycal_account_email', cleanEmail);
+        setIsAuthSubmitting(false);
+        return;
+      }
+
+      const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, passwordInput);
+      const createdUser = userCredential.user;
+      setUser(createdUser);
+      setAccountEmail(createdUser.email || cleanEmail);
+      localStorage.setItem('dailycal_account_email', createdUser.email || cleanEmail);
+
+      if (displayNameInput.trim()) {
+        try {
+          await updateProfile(createdUser, { displayName: displayNameInput.trim() });
+        } catch (pErr) {
+          console.warn("Update display name err:", pErr);
+        }
+      }
+
+      const rawName = displayNameInput.trim() || createdUser.email?.split('@')[0] || 'User';
+      const emailName = rawName.replace(/[^a-zA-Z0-9]/g, '');
+      const newFamilyCode = `Keluarga_${emailName}`;
+
+      if (db) {
+        const safeCode = newFamilyCode.replace(/[^a-zA-Z0-9]/g, '_');
+        await setDoc(doc(db, 'artifacts', appId, 'users', createdUser.uid, 'settings', 'account'), {
+          familyCode: newFamilyCode,
+          roomPin: null,
+          email: createdUser.email || cleanEmail,
+          displayName: displayNameInput.trim() || null,
+          createdAt: Date.now()
+        });
+
+        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `family_${safeCode}_meta`, 'info'), {
+          familyCode: newFamilyCode,
+          pin: null,
+          ownerUid: createdUser.uid,
+          ownerEmail: createdUser.email || cleanEmail,
+          createdAt: Date.now()
+        });
+      }
+
+      setFamilyCode(newFamilyCode);
+      setRoomPin(null);
+      localStorage.setItem('dailycal_family_code', newFamilyCode);
+      localStorage.removeItem('dailycal_room_pin');
+    } catch (err: any) {
+      console.error("Sign up error:", err);
+      if (err.code === 'auth/email-already-in-use') {
+        setAuthError("Email ini sudah terdaftar. Silakan gunakan tab 'Masuk Email' untuk login.");
+      } else if (err.code === 'auth/invalid-email') {
+        setAuthError("Format alamat email tidak valid.");
+      } else if (err.code === 'auth/weak-password') {
+        setAuthError("Kata sandi terlalu pendek/lemah. Gunakan minimal 6 karakter.");
+      } else {
+        setAuthError(err.message || "Gagal mendaftarkan akun baru.");
+      }
+    } finally {
+      setIsAuthSubmitting(false);
+    }
+  };
+
+  const handleSendPasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail.trim()) {
+      setAuthError("Harap masukkan alamat email Anda.");
+      return;
+    }
+    setIsAuthSubmitting(true);
+    setAuthError(null);
+    try {
+      if (auth) {
+        await sendPasswordResetEmail(auth, resetEmail.trim());
+      }
+      setResetEmailSent(true);
+    } catch (err: any) {
+      setAuthError("Gagal mengirim link reset: " + (err.message || "Periksa alamat email Anda."));
+    } finally {
+      setIsAuthSubmitting(false);
+    }
+  };
+
+  const handleCalculateNutritionText = async () => {
+    if (!manualFoodText.trim()) {
+      setManualCalcError("Ketik nama atau deskripsi makanan/minuman terlebih dahulu.");
+      return;
+    }
+
+    setIsCalculatingNutrition(true);
+    setManualCalcError(null);
+
+    try {
+      const res = await fetchWithRetry('/api/analyze-food-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: manualFoodText.trim() })
+      });
+
+      if (res.isFood === false) {
+        setManualCalcError("Teks yang dimasukkan tidak terdeteksi sebagai makanan atau minuman yang dapat dikonsumsi. Coba ketik nama makanan yang lebih jelas.");
+      } else {
+        setManualForm({
+          name: res.name || manualFoodText.trim(),
+          calories: String(res.calories || 0),
+          protein: String(res.protein || 0),
+          carbs: String(res.carbs || 0),
+          fat: String(res.fat || 0),
+          healthTip: res.healthTip || getHealthTip(res.name || manualFoodText, res.calories || 0, res.protein || 0, res.carbs || 0, res.fat || 0)
+        });
+        setManualNutritionCalculated(true);
+      }
+    } catch (err: any) {
+      console.warn("API text nutrition calc failed, using heuristic estimation:", err);
+      const textLower = manualFoodText.toLowerCase();
+      let estCal = 250;
+      let estPro = 8;
+      let estCarb = 32;
+      let estFat = 7;
+
+      if (textLower.includes('goreng') || textLower.includes('padang') || textLower.includes('santan') || textLower.includes('burger')) {
+        estCal = 450; estPro = 16; estCarb = 52; estFat = 18;
+      } else if (textLower.includes('kopi') || textLower.includes('boba') || textLower.includes('teh') || textLower.includes('jus')) {
+        estCal = 160; estPro = 3; estCarb = 28; estFat = 4;
+      } else if (textLower.includes('salad') || textLower.includes('sayur') || textLower.includes('buah') || textLower.includes('oat')) {
+        estCal = 150; estPro = 5; estCarb = 24; estFat = 3;
+      } else if (textLower.includes('ayam') || textLower.includes('daging') || textLower.includes('telur') || textLower.includes('ikan') || textLower.includes('sate')) {
+        estCal = 340; estPro = 26; estCarb = 14; estFat = 12;
+      }
+
+      setManualForm({
+        name: manualFoodText.trim(),
+        calories: String(estCal),
+        protein: String(estPro),
+        carbs: String(estCarb),
+        fat: String(estFat),
+        healthTip: `Estimasi nutrisi untuk "${manualFoodText.trim()}". Anda dapat menyesuaikan angka kalori & makronutrisi di bawah ini secara bebas.`
+      });
+      setManualNutritionCalculated(true);
+    } finally {
+      setIsCalculatingNutrition(false);
+    }
+  };
+
+  const handleSaveManualFood = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!manualForm.name.trim()) {
+      setManualCalcError("Nama makanan atau minuman tidak boleh kosong.");
+      return;
+    }
+    if (!activeProfileId || !familyCode) {
+      setManualCalcError("Pilih profil pengguna terlebih dahulu.");
+      return;
+    }
+
+    const cals = parseInt(manualForm.calories) || 0;
+    const pro = parseInt(manualForm.protein) || 0;
+    const carbs = parseInt(manualForm.carbs) || 0;
+    const fat = parseInt(manualForm.fat) || 0;
+    const now = new Date();
+
+    const tip = manualForm.healthTip || getHealthTip(manualForm.name, cals, pro, carbs, fat);
+
+    const newLog: FoodLog = {
+      id: `log_manual_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      profileId: activeProfileId,
+      name: manualForm.name.trim(),
+      calories: cals,
+      protein: pro,
+      carbs: carbs,
+      fat: fat,
+      healthTip: tip,
+      imageUrl: undefined,
+      timestamp: now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      dateString: selectedDate,
+      createdAt: Date.now()
+    };
+
+    const updated = [newLog, ...allLogsRaw];
+    setAllLogsRaw(updated);
+    localStorage.setItem('dailycal_food_logs', JSON.stringify(updated));
+
+    if (user && db) {
+      const safeCode = familyCode.replace(/[^a-zA-Z0-9]/g, '_');
+      try {
+        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', `family_${safeCode}_food`), {
+          ...newLog
+        });
+      } catch (err) {
+        console.error("Save manual food firestore err:", err);
+      }
+    }
+
+    setIsManualModalOpen(false);
+    setManualFoodText('');
+    setManualNutritionCalculated(false);
+    setManualCalcError(null);
+    setManualForm({ name: '', calories: '', protein: '', carbs: '', fat: '', healthTip: '' });
+  };
+
   const handleJoinFamily = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!codeInput.trim()) return;
@@ -1268,16 +1689,27 @@ export default function App() {
   const confirmLeaveFamily = async () => {
     setFamilyCode(null);
     setRoomPin(null);
+    setAccountEmail(null);
     localStorage.removeItem('dailycal_family_code');
     localStorage.removeItem('dailycal_room_pin');
+    localStorage.removeItem('dailycal_account_email');
     if (user && db) {
       try {
         await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'account'), { familyCode: null, roomPin: null });
       } catch (err) { console.error(err); }
     }
+    if (auth) {
+      try {
+        await signOut(auth);
+      } catch (e) { console.warn("Auth sign out err:", e); }
+    }
     setIsConfirmLeaveOpen(false);
     setIsSidebarOpen(false);
     setCurrentView('dashboard');
+  };
+
+  const handleSignOutAccount = async () => {
+    await confirmLeaveFamily();
   };
 
   const openNewProfile = () => {
@@ -1537,109 +1969,334 @@ export default function App() {
 
   if (!familyCode) {
     return (
-      <div className="bg-gray-50 min-h-screen font-sans flex items-center justify-center p-4">
-        <div className="bg-white w-full max-w-sm rounded-3xl p-8 shadow-xl text-center border border-gray-100">
-          <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
-            <ShieldCheck className="w-8 h-8 text-green-600"/>
+      <div className="bg-gradient-to-b from-green-50/70 via-gray-50 to-white min-h-screen font-sans flex items-center justify-center p-4">
+        <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl text-center border border-gray-100 relative overflow-hidden">
+          
+          {/* Header Branding */}
+          <div className="bg-gradient-to-br from-green-400 to-green-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-500/20 text-white transform -rotate-3 hover:rotate-0 transition-transform">
+            <Flame className="w-9 h-9 fill-current" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Ruang Keluarga</h2>
-          <p className="text-gray-500 text-xs mb-6 leading-relaxed">
-            Masukkan Kode Keluarga & PIN Rahasia untuk masuk atau membuat ruang sinkronisasi antar HP.
+          <h2 className="text-2xl font-black text-gray-800 tracking-tight">DailyCal</h2>
+          <p className="text-gray-500 text-xs mt-1 mb-5">
+            Pelacak Kalori, Nutrisi & Hidrasi Cerdas Multi-Perangkat
           </p>
 
-          {joinError && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2 text-left">
-              <AlertCircle className="w-5 h-5 shrink-0 text-red-500" />
-              <span>{joinError}</span>
+          {/* Sync Tip Notice */}
+          <div className="mb-5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/80 rounded-2xl p-3.5 text-left flex items-start gap-3 shadow-xs">
+            <div className="bg-blue-500 text-white p-1.5 rounded-xl shrink-0 mt-0.5">
+              <Smartphone className="w-4 h-4" />
+            </div>
+            <div className="text-[11px] text-blue-900 leading-relaxed font-medium">
+              <span className="font-bold text-blue-950 block mb-0.5">Bebas Pindah Perangkat 📱☁️</span>
+              Gunakan <strong>Login Email</strong> agar akun, jurnal makanan, dan target nutrisi Anda otomatis tersimpan & tersinkronisasi di HP mana pun!
+            </div>
+          </div>
+
+          {/* Auth Mode Tabs */}
+          <div className="grid grid-cols-3 gap-1 bg-gray-100 p-1 rounded-2xl mb-5 text-xs font-bold text-gray-600">
+            <button
+              type="button"
+              onClick={() => { setAuthTab('email_login'); setAuthError(null); setJoinError(null); }}
+              className={`py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${authTab === 'email_login' ? 'bg-white text-green-700 shadow-sm font-extrabold' : 'hover:text-gray-900'}`}
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Masuk</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAuthTab('email_register'); setAuthError(null); setJoinError(null); }}
+              className={`py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${authTab === 'email_register' ? 'bg-white text-green-700 shadow-sm font-extrabold' : 'hover:text-gray-900'}`}
+            >
+              <UserCheck className="w-3.5 h-3.5" />
+              <span>Daftar</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAuthTab('family_code'); setAuthError(null); setJoinError(null); }}
+              className={`py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${authTab === 'family_code' ? 'bg-white text-green-700 shadow-sm font-extrabold' : 'hover:text-gray-900'}`}
+            >
+              <KeyRound className="w-3.5 h-3.5" />
+              <span>Kode Ruang</span>
+            </button>
+          </div>
+
+          {/* Error Banner */}
+          {(authError || joinError) && (
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-700 p-3.5 rounded-2xl text-xs font-semibold flex items-start gap-2 text-left animate-shake">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
+              <span>{authError || joinError}</span>
             </div>
           )}
 
-          <form onSubmit={handleJoinFamily} className="space-y-3.5">
-            <div>
-              <label className="block text-left text-[11px] font-bold text-gray-500 uppercase mb-1">
-                Kode Keluarga
-              </label>
-              <div className="relative">
-                <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input 
-                  type="text" 
-                  required 
-                  placeholder="Cth: KeluargaBudi123" 
-                  value={codeInput} 
-                  onChange={(e) => setCodeInput(e.target.value)} 
-                  className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3.5 pl-12 pr-4 text-gray-800 font-bold focus:outline-none focus:ring-2 focus:ring-green-500 transition-all text-sm"
-                />
-              </div>
+          {/* Success Banner */}
+          {authSuccess && (
+            <div className="mb-4 bg-green-50 border border-green-200 text-green-700 p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2 text-left">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-green-600" />
+              <span>{authSuccess}</span>
+            </div>
+          )}
 
-              {nameSuggestions.length > 0 && (
-                <div className="mt-2.5 p-3 bg-green-50/90 border border-green-200 rounded-2xl text-left">
-                  <p className="text-[11px] font-bold text-green-800 mb-1.5 flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-green-600 shrink-0"/>
-                    <span>Saran Nama Keluarga Unik (Ketuk untuk pilih):</span>
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {nameSuggestions.map((sug, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          setCodeInput(sug);
-                          setJoinError(null);
-                        }}
-                        className="bg-white hover:bg-green-100 border border-green-300 text-green-800 text-xs px-2.5 py-1 rounded-xl font-bold transition-all shadow-xs cursor-pointer active:scale-95"
-                      >
-                        {sug}
-                      </button>
-                    ))}
-                  </div>
+          {/* TAB 1: EMAIL LOGIN */}
+          {authTab === 'email_login' && (
+            <form onSubmit={handleEmailSignIn} className="space-y-3 text-left">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1">
+                  Alamat Email
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="email"
+                    required
+                    placeholder="nama@email.com"
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3 pl-10 pr-4 text-gray-800 font-medium focus:outline-none focus:ring-2 focus:ring-green-500 transition-all text-sm"
+                  />
                 </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-left text-[11px] font-bold text-gray-500 uppercase mb-1 flex justify-between">
-                <span>PIN / Kata Sandi (Opsional)</span>
-                <span className="text-[10px] text-gray-400 font-normal">Kunci Keamanan</span>
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input 
-                  type="password" 
-                  placeholder="PIN Rahasia (Cth: 1234)" 
-                  value={pinInput} 
-                  onChange={(e) => setPinInput(e.target.value)} 
-                  className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3.5 pl-12 pr-4 text-gray-800 font-bold focus:outline-none focus:ring-2 focus:ring-green-500 transition-all text-sm"
-                />
               </div>
-            </div>
 
-            <button 
-              type="submit" 
-              disabled={isJoiningRoom}
-              className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 mt-2 cursor-pointer"
-            >
-              {isJoiningRoom ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Verifikasi Data Cloud...</span>
-                </>
-              ) : (
-                <>
-                  <LogIn className="w-5 h-5" />
-                  <span>Mulai / Masuk Ruang</span>
-                </>
-              )}
-            </button>
-          </form>
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-[11px] font-bold text-gray-600 uppercase">
+                    Kata Sandi
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => { setIsResetModalOpen(true); setResetEmail(emailInput); setResetEmailSent(false); }}
+                    className="text-[11px] text-green-600 hover:text-green-700 font-bold cursor-pointer"
+                  >
+                    Lupa Sandi?
+                  </button>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder="Minimal 6 karakter"
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3 pl-10 pr-10 text-gray-800 font-medium focus:outline-none focus:ring-2 focus:ring-green-500 transition-all text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer p-1"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
 
+              <button
+                type="submit"
+                disabled={isAuthSubmitting}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-green-600/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 mt-4 cursor-pointer"
+              >
+                {isAuthSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Menghubungkan Akun...</span>
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-5 h-5" />
+                    <span>Masuk ke Akun Saya</span>
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* TAB 2: EMAIL REGISTER */}
+          {authTab === 'email_register' && (
+            <form onSubmit={handleEmailSignUp} className="space-y-3 text-left">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1">
+                  Nama Anda / Panggilan
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: Budi Santoso"
+                    value={displayNameInput}
+                    onChange={(e) => setDisplayNameInput(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3 pl-10 pr-4 text-gray-800 font-medium focus:outline-none focus:ring-2 focus:ring-green-500 transition-all text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1">
+                  Alamat Email
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="email"
+                    required
+                    placeholder="nama@email.com"
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3 pl-10 pr-4 text-gray-800 font-medium focus:outline-none focus:ring-2 focus:ring-green-500 transition-all text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1">
+                  Buat Kata Sandi (Min 6 Karakter)
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder="Kata sandi rahasia"
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3 pl-10 pr-10 text-gray-800 font-medium focus:outline-none focus:ring-2 focus:ring-green-500 transition-all text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer p-1"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1">
+                  Ulangi Kata Sandi
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder="Ketik ulang kata sandi"
+                    value={confirmPasswordInput}
+                    onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3 pl-10 pr-4 text-gray-800 font-medium focus:outline-none focus:ring-2 focus:ring-green-500 transition-all text-sm"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isAuthSubmitting}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-green-600/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 mt-4 cursor-pointer"
+              >
+                {isAuthSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Mendaftarkan Akun...</span>
+                  </>
+                ) : (
+                  <>
+                    <UserCheck className="w-5 h-5" />
+                    <span>Daftar & Mulai Sinkronisasi</span>
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* TAB 3: FAMILY CODE */}
+          {authTab === 'family_code' && (
+            <form onSubmit={handleJoinFamily} className="space-y-3.5 text-left">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1">
+                  Kode Keluarga / Ruang
+                </label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder="Cth: KeluargaBudi123" 
+                    value={codeInput} 
+                    onChange={(e) => setCodeInput(e.target.value)} 
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3 pl-10 pr-4 text-gray-800 font-bold focus:outline-none focus:ring-2 focus:ring-green-500 transition-all text-sm"
+                  />
+                </div>
+
+                {nameSuggestions.length > 0 && (
+                  <div className="mt-2.5 p-3 bg-green-50/90 border border-green-200 rounded-2xl text-left">
+                    <p className="text-[11px] font-bold text-green-800 mb-1.5 flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5 text-green-600 shrink-0"/>
+                      <span>Saran Nama Unik:</span>
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {nameSuggestions.map((sug, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setCodeInput(sug);
+                            setJoinError(null);
+                          }}
+                          className="bg-white hover:bg-green-100 border border-green-300 text-green-800 text-xs px-2.5 py-1 rounded-xl font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                        >
+                          {sug}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1 flex justify-between">
+                  <span>PIN Rahasia (Opsional)</span>
+                  <span className="text-[10px] text-gray-400 font-normal">Kunci Keamanan</span>
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input 
+                    type="password" 
+                    placeholder="PIN Rahasia (Cth: 1234)" 
+                    value={pinInput} 
+                    onChange={(e) => setPinInput(e.target.value)} 
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3 pl-10 pr-4 text-gray-800 font-bold focus:outline-none focus:ring-2 focus:ring-green-500 transition-all text-sm"
+                  />
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={isJoiningRoom}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 rounded-2xl shadow-lg transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 mt-4 cursor-pointer"
+              >
+                {isJoiningRoom ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Sinkronisasi Ruang...</span>
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-5 h-5" />
+                    <span>Masuk ke Ruang</span>
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* Google Sign In Divider */}
           {auth && (
             <div className="mt-6 pt-5 border-t border-gray-100">
-              <p className="text-xs text-gray-400 mb-3 font-medium">Atau gunakan akun Google untuk masuk otomatis:</p>
+              <p className="text-[11px] text-gray-400 mb-3 font-semibold uppercase tracking-wider">Atau Masuk Cepat:</p>
               <button 
                 onClick={handleGoogleSignIn}
-                disabled={isJoiningRoom}
+                disabled={isJoiningRoom || isAuthSubmitting}
                 type="button"
-                className="w-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold py-3 px-4 rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer"
+                className="w-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold py-3 px-4 rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2.5 text-sm disabled:opacity-50 cursor-pointer active:scale-95"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -1651,6 +2308,77 @@ export default function App() {
               </button>
             </div>
           )}
+
+          {/* Reset Password Modal */}
+          {isResetModalOpen && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+              <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-left border border-gray-100 relative">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                    <Lock className="w-5 h-5 text-green-600" />
+                    <span>Reset Kata Sandi</span>
+                  </h3>
+                  <button 
+                    onClick={() => { setIsResetModalOpen(false); setResetEmailSent(false); }}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {resetEmailSent ? (
+                  <div className="text-center py-4 space-y-3">
+                    <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
+                      <CheckCircle2 className="w-7 h-7" />
+                    </div>
+                    <h4 className="font-bold text-gray-800">Email Terkirim!</h4>
+                    <p className="text-xs text-gray-500 leading-relaxed">
+                      Link untuk mereset kata sandi telah dikirim ke <strong>{resetEmail}</strong>. Silakan periksa kotak masuk atau folder spam Anda.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { setIsResetModalOpen(false); setResetEmailSent(false); }}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-2xl text-xs mt-3 cursor-pointer"
+                    >
+                      Kembali ke Login
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSendPasswordReset} className="space-y-4">
+                    <p className="text-xs text-gray-500 leading-relaxed">
+                      Masukkan alamat email terdaftar Anda. Kami akan mengirimkan tautan untuk membuat kata sandi baru.
+                    </p>
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1">
+                        Alamat Email
+                      </label>
+                      <div className="relative">
+                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type="email"
+                          required
+                          placeholder="nama@email.com"
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                          className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3 pl-10 pr-4 text-gray-800 font-medium focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isAuthSubmitting}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-2xl shadow-md transition-all text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {isAuthSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      <span>Kirim Link Reset Sandi</span>
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     );
@@ -1768,14 +2496,25 @@ export default function App() {
         <div className="fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onClick={() => setIsSidebarOpen(false)} />
           <div className="relative w-4/5 max-w-sm bg-white h-full shadow-2xl flex flex-col transform transition-transform duration-300">
-            <div className="p-6 bg-green-50 border-b border-green-100 flex flex-col justify-end min-h-[140px]">
-              <div className="w-14 h-14 bg-white rounded-full border-4 border-green-500 flex items-center justify-center mb-3 shadow-sm">
-                <User className="w-6 h-6 text-green-600" />
+            <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-b border-green-100 flex flex-col justify-end min-h-[150px]">
+              <div className="w-14 h-14 bg-white rounded-2xl border-2 border-green-500/30 flex items-center justify-center mb-3 shadow-xs">
+                <User className="w-7 h-7 text-green-600" />
               </div>
-              <h2 className="font-bold text-xl text-gray-800 capitalize">{activeProfile?.name || 'User'}</h2>
-              <div className="flex items-center gap-2 mt-1">
-                <ShieldCheck className="w-4 h-4 text-green-600" />
-                <span className="text-xs text-green-700 font-medium bg-green-100 px-2 py-0.5 rounded-full">{t('room', language)}: {familyCode}</span>
+              <h2 className="font-bold text-xl text-gray-900 capitalize">{activeProfile?.name || 'User'}</h2>
+              
+              <div className="flex flex-col gap-1.5 mt-2">
+                {(accountEmail || user?.email) && (
+                  <div className="flex items-center gap-1.5 text-xs text-gray-600 font-medium truncate">
+                    <Mail className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                    <span className="truncate">{accountEmail || user?.email}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-green-600 shrink-0" />
+                  <span className="text-[11px] text-green-800 font-bold bg-green-100/80 px-2 py-0.5 rounded-lg font-mono">
+                    {t('room', language)}: {familyCode}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -1796,14 +2535,14 @@ export default function App() {
             </div>
 
             <div className="p-4 border-t border-gray-100 space-y-2">
-              <button onClick={() => { setIsHistoryModalOpen(true); setIsSidebarOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-2xl transition-colors font-medium">
-                <Calendar className="w-5 h-5 text-gray-400" /> {t('viewHistory', language)}
+              <button onClick={() => { setIsHistoryModalOpen(true); setIsSidebarOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-2xl transition-colors font-medium text-xs">
+                <Calendar className="w-4 h-4 text-gray-400" /> {t('viewHistory', language)}
               </button>
-              <button onClick={() => { setIsUsersModalOpen(true); setIsSidebarOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-2xl transition-colors font-medium">
-                <Users className="w-5 h-5 text-gray-400" /> {t('switchUser', language)}
+              <button onClick={() => { setIsUsersModalOpen(true); setIsSidebarOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-2xl transition-colors font-medium text-xs">
+                <Users className="w-4 h-4 text-gray-400" /> {t('switchUser', language)}
               </button>
-              <button onClick={handleLeaveFamilyRequest} className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-2xl transition-colors font-medium">
-                <LogOut className="w-5 h-5" /> {t('leaveRoom', language)}
+              <button onClick={handleLeaveFamilyRequest} className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-2xl transition-colors font-medium text-xs">
+                <LogOut className="w-4 h-4" /> Keluar Akun / Ganti Ruang
               </button>
             </div>
           </div>
@@ -2502,13 +3241,261 @@ export default function App() {
 
         {isSourceModalOpen && (
           <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-gray-900/60 p-4 animate-in fade-in duration-200">
-            <div className="bg-white w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl mb-24 md:mb-0">
-              <h3 className="font-bold mb-4 text-lg">{t('addFoodFor', language)} {activeProfile?.name}</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <button onClick={triggerCamera} className="bg-green-50 hover:bg-green-100 transition-colors p-4 rounded-2xl border border-green-100 flex flex-col items-center gap-2"><Camera className="text-green-500 w-8 h-8"/><span className="font-medium text-green-700">{t('camera', language)}</span></button>
-                <button onClick={triggerGallery} className="bg-blue-50 hover:bg-blue-100 transition-colors p-4 rounded-2xl border border-blue-100 flex flex-col items-center gap-2"><ImageIcon className="text-blue-500 w-8 h-8"/><span className="font-medium text-blue-700">{t('gallery', language)}</span></button>
+            <div className="bg-white w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl mb-20 md:mb-0 border border-gray-100">
+              <h3 className="font-bold mb-1 text-lg text-gray-800">{t('addFoodFor', language)} {activeProfile?.name}</h3>
+              <p className="text-xs text-gray-400 mb-5">Pilih metode pencatatan menu makanan atau minuman Anda:</p>
+              
+              <div className="grid grid-cols-3 gap-2.5">
+                <button 
+                  onClick={triggerCamera} 
+                  className="bg-green-50 hover:bg-green-100 transition-all p-3.5 rounded-2xl border border-green-100 flex flex-col items-center gap-1.5 cursor-pointer active:scale-95 group"
+                >
+                  <div className="p-2.5 bg-green-500 text-white rounded-xl shadow-xs group-hover:scale-105 transition-transform">
+                    <Camera className="w-5 h-5"/>
+                  </div>
+                  <span className="font-bold text-xs text-green-800">{t('camera', language)}</span>
+                </button>
+
+                <button 
+                  onClick={triggerGallery} 
+                  className="bg-blue-50 hover:bg-blue-100 transition-all p-3.5 rounded-2xl border border-blue-100 flex flex-col items-center gap-1.5 cursor-pointer active:scale-95 group"
+                >
+                  <div className="p-2.5 bg-blue-500 text-white rounded-xl shadow-xs group-hover:scale-105 transition-transform">
+                    <ImageIcon className="w-5 h-5"/>
+                  </div>
+                  <span className="font-bold text-xs text-blue-800">{t('gallery', language)}</span>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setIsSourceModalOpen(false);
+                    setManualFoodText('');
+                    setManualNutritionCalculated(false);
+                    setManualCalcError(null);
+                    setManualForm({ name: '', calories: '', protein: '', carbs: '', fat: '', healthTip: '' });
+                    setIsManualModalOpen(true);
+                  }} 
+                  className="bg-purple-50 hover:bg-purple-100 transition-all p-3.5 rounded-2xl border border-purple-100 flex flex-col items-center gap-1.5 cursor-pointer active:scale-95 group"
+                >
+                  <div className="p-2.5 bg-purple-500 text-white rounded-xl shadow-xs group-hover:scale-105 transition-transform">
+                    <PenLine className="w-5 h-5"/>
+                  </div>
+                  <span className="font-bold text-xs text-purple-800">{t('manualInput', language)}</span>
+                </button>
               </div>
-              <button onClick={() => setIsSourceModalOpen(false)} className="mt-6 w-full py-3 bg-gray-100 hover:bg-gray-200 transition-colors rounded-xl font-bold text-gray-600">{t('cancel', language)}</button>
+
+              <button 
+                onClick={() => setIsSourceModalOpen(false)} 
+                className="mt-5 w-full py-3 bg-gray-100 hover:bg-gray-200 transition-colors rounded-2xl font-bold text-xs text-gray-600 cursor-pointer"
+              >
+                {t('cancel', language)}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Input Makanan & Minuman Manual */}
+        {isManualModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+            <div className="bg-white w-full max-w-md rounded-3xl flex flex-col max-h-[90vh] shadow-2xl border border-gray-100 overflow-hidden">
+              <div className="px-5 py-4 flex justify-between items-center border-b border-gray-100 bg-gray-50/50">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-purple-100 text-purple-600 rounded-xl">
+                    <Utensils className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base text-gray-800">{t('manualFoodTitle', language)}</h3>
+                    <p className="text-[11px] text-gray-400 font-medium">{t('forMember', language)} {activeProfile?.name}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsManualModalOpen(false)}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <X className="w-5 h-5"/>
+                </button>
+              </div>
+
+              <div className="overflow-y-auto p-5 space-y-4">
+                
+                {/* AI / Quick Calculation Box */}
+                <div className="bg-gradient-to-br from-purple-50 to-indigo-50/70 border border-purple-200/70 rounded-2xl p-4 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-purple-900 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-purple-600" />
+                      <span>{t('calcNutritionTitle', language)}</span>
+                    </span>
+                    <span className="text-[10px] bg-purple-200/70 text-purple-800 font-extrabold px-2 py-0.5 rounded-full">AI Smart</span>
+                  </div>
+                  <p className="text-[11px] text-purple-800 leading-relaxed">
+                    {t('calcNutritionDesc', language)}
+                  </p>
+                  
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Cth: 1 porsi sate ayam lontong bumbu kacang"
+                      value={manualFoodText}
+                      onChange={(e) => setManualFoodText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleCalculateNutritionText();
+                        }
+                      }}
+                      className="w-full bg-white border border-purple-200 rounded-xl py-2.5 pl-3.5 pr-24 text-gray-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCalculateNutritionText}
+                      disabled={isCalculatingNutrition || !manualFoodText.trim()}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-[11px] px-3 py-1.5 rounded-lg transition-all disabled:opacity-50 flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs"
+                    >
+                      {isCalculatingNutrition ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Hitung...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Hitung</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {manualCalcError && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 p-2.5 rounded-xl text-[11px] font-semibold flex items-start gap-1.5">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
+                      <span>{manualCalcError}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Form Input / Hasil Kalkulasi */}
+                <form id="manualFoodForm" onSubmit={handleSaveManualFood} className="space-y-3.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1">
+                      Nama Makanan / Minuman
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Cth: Nasi Goreng Spesial"
+                      value={manualForm.name}
+                      onChange={(e) => setManualForm(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl py-2.5 px-3.5 text-gray-800 font-bold focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                    />
+                  </div>
+
+                  <div className="bg-orange-50/60 border border-orange-200/70 p-3.5 rounded-2xl flex items-center justify-between">
+                    <span className="text-xs font-bold text-orange-950 flex items-center gap-2">
+                      <Flame className="w-4 h-4 text-orange-500" />
+                      <span>Total Kalori (kcal)</span>
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        required
+                        placeholder="0"
+                        min="0"
+                        value={manualForm.calories}
+                        onChange={(e) => setManualForm(prev => ({ ...prev, calories: e.target.value }))}
+                        className="w-24 bg-white border border-orange-200 rounded-xl py-1.5 px-2.5 text-right font-extrabold text-orange-600 text-base focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                      <span className="text-xs font-bold text-orange-400 uppercase">kcal</span>
+                    </div>
+                  </div>
+
+                  {/* Makronutrisi Grid */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1.5">
+                      Rincian Makronutrisi (Gram)
+                    </label>
+                    <div className="grid grid-cols-3 gap-2.5 text-center">
+                      <div className="bg-blue-50/70 border border-blue-100 p-2.5 rounded-xl">
+                        <span className="text-[10px] font-bold text-blue-700 uppercase block mb-1">Protein</span>
+                        <div className="flex items-center justify-center gap-1">
+                          <input
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            value={manualForm.protein}
+                            onChange={(e) => setManualForm(prev => ({ ...prev, protein: e.target.value }))}
+                            className="w-12 bg-white border border-blue-200 rounded-lg py-1 text-center font-bold text-blue-800 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                          <span className="text-xs font-semibold text-blue-600">g</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-yellow-50/70 border border-yellow-100 p-2.5 rounded-xl">
+                        <span className="text-[10px] font-bold text-yellow-700 uppercase block mb-1">Karbo</span>
+                        <div className="flex items-center justify-center gap-1">
+                          <input
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            value={manualForm.carbs}
+                            onChange={(e) => setManualForm(prev => ({ ...prev, carbs: e.target.value }))}
+                            className="w-12 bg-white border border-yellow-200 rounded-lg py-1 text-center font-bold text-yellow-800 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-500"
+                          />
+                          <span className="text-xs font-semibold text-yellow-600">g</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-rose-50/70 border border-rose-100 p-2.5 rounded-xl">
+                        <span className="text-[10px] font-bold text-rose-700 uppercase block mb-1">Lemak</span>
+                        <div className="flex items-center justify-center gap-1">
+                          <input
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            value={manualForm.fat}
+                            onChange={(e) => setManualForm(prev => ({ ...prev, fat: e.target.value }))}
+                            className="w-12 bg-white border border-rose-200 rounded-lg py-1 text-center font-bold text-rose-800 text-sm focus:outline-none focus:ring-1 focus:ring-rose-500"
+                          />
+                          <span className="text-xs font-semibold text-rose-600">g</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Saran / Health Tip */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1">
+                      Catatan / Saran Kesehatan
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="Catatan tambahan untuk menu ini (opsional)"
+                      value={manualForm.healthTip}
+                      onChange={(e) => setManualForm(prev => ({ ...prev, healthTip: e.target.value }))}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 px-3 text-gray-700 text-xs focus:outline-none focus:ring-2 focus:ring-green-500 resize-none font-normal"
+                    />
+                  </div>
+                </form>
+
+              </div>
+
+              <div className="p-4 border-t border-gray-100 bg-gray-50 flex gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsManualModalOpen(false)}
+                  className="w-1/3 py-3 bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+                >
+                  {t('cancel', language)}
+                </button>
+                <button
+                  type="submit"
+                  form="manualFoodForm"
+                  disabled={!manualForm.name.trim()}
+                  className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-xs transition-all shadow-md shadow-green-600/20 disabled:opacity-50 cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Simpan ke Jurnal ({activeProfile?.name || 'User'})</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
