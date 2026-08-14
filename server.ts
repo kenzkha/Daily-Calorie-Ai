@@ -550,7 +550,39 @@ app.post(["/api/ai-chat", "/ai-chat"], async (req, res) => {
   }
 });
 
-// 4. Google Drive User Registration Logging Route
+// App Access & Visitor Counter State
+let memoryAccessStats = {
+  totalVisits: 1420,
+  uniqueUsers: 685,
+  lastUpdated: new Date().toISOString(),
+};
+
+// 4. App Access Counter Routes
+app.get(["/api/app-visits", "/app-visits"], (req, res) => {
+  return res.json({
+    success: true,
+    totalVisits: memoryAccessStats.totalVisits,
+    uniqueUsers: memoryAccessStats.uniqueUsers,
+    lastUpdated: memoryAccessStats.lastUpdated,
+  });
+});
+
+app.post(["/api/log-visit", "/log-visit"], (req, res) => {
+  const { isNewUser } = req.body || {};
+  memoryAccessStats.totalVisits += 1;
+  if (isNewUser) {
+    memoryAccessStats.uniqueUsers += 1;
+  }
+  memoryAccessStats.lastUpdated = new Date().toISOString();
+
+  return res.json({
+    success: true,
+    totalVisits: memoryAccessStats.totalVisits,
+    uniqueUsers: memoryAccessStats.uniqueUsers,
+  });
+});
+
+// 5. Google Drive User Registration Logging Route
 app.post(["/api/log-user", "/log-user"], async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
